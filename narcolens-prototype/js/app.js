@@ -110,6 +110,12 @@
     if (location.hash !== '#' + screen) history.replaceState(null, '', '#' + screen);
     var r = RENDER[screen];
     if (r) r();
+    var sec = $('#screen-' + screen);
+    if (sec) {
+      Array.prototype.forEach.call(sec.children, function (ch, i) { ch.style.setProperty('--i', i); });
+      sec.classList.remove('enter'); void sec.offsetWidth; sec.classList.add('enter');
+    }
+    if (screen === 'dashboard') countUpKpis();
     window.scrollTo(0, 0);
   }
 
@@ -456,21 +462,21 @@
     if (act === 'open') {
       if (!/Opened/.test(c.status)) {
         c.status = 'Opened · at inspection desk';
-        addTimeline(c, 'OFFICER', 'Bag opened at inspection desk 2', 'Officer accepted the recommendation. Contents photographed with desk tablet.', '');
+        addTimeline(c, 'OFFICER', 'Bag opened by ' + (NL.officer ? NL.officer.short : 'Officer') + ' · desk 2', 'Officer accepted the recommendation. Contents photographed with desk tablet.', '');
         log(c.site, c.id + ' opened at inspection desk', 'info');
       }
       go('desk');
     } else if (act === 'rescan') {
-      addTimeline(c, 'OFFICER', 'Re-scan requested', 'Bag sent through second-angle scan.', '');
+      addTimeline(c, 'OFFICER', 'Re-scan requested by ' + (NL.officer ? NL.officer.short : 'Officer'), 'Bag sent through second-angle scan.', '');
       renderCase();
     } else if (act === 'clear') {
       c.status = 'Cleared by officer';
-      addTimeline(c, 'OFFICER', 'Cleared', 'Officer override recorded – used as feedback for model calibration.', 'ok');
+      addTimeline(c, 'OFFICER', 'Cleared by ' + (NL.officer ? NL.officer.short : 'Officer'), 'Officer override recorded – used as feedback for model calibration.', 'ok');
       log(c.site, c.id + ' cleared by officer', 'ok');
       renderCase();
     } else if (act === 'seize') {
       c.status = 'Seized · lab confirmation pending';
-      addTimeline(c, 'OFFICER', 'Seizure · sample sent to forensic lab', 'Chain of custody started. AI evidence pack (images, spectra, scores) attached.', 'danger');
+      addTimeline(c, 'OFFICER', 'Seizure by ' + (NL.officer ? NL.officer.short : 'Officer') + ' · sample sent to forensic lab', 'Chain of custody started. AI evidence pack (images, spectra, scores) attached.', 'danger');
       log(c.site, c.id + ' seized – sample to forensic lab', 'danger');
       renderCase();
     } else if (act === 'tolearn') {
@@ -909,6 +915,66 @@
     btn.disabled = false;
   }
 
+  // ---------------- KPI count-up ----------------
+  function countUpKpis() {
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    $$('#kpis .val').forEach(function (el) {
+      var m = /^([^\d]*)([\d,.]+)(.*)$/.exec(el.textContent);
+      if (!m) return;
+      var target = parseFloat(m[2].replace(/,/g, '')), dec = (m[2].split('.')[1] || '').length, t0 = performance.now();
+      el.dataset.counting = '1';
+      (function step(now) {
+        var p = Math.min(1, (now - t0) / 900), e = 1 - Math.pow(1 - p, 3), v = target * e;
+        el.textContent = m[1] + (dec ? v.toFixed(dec) : Math.round(v).toLocaleString('en-US')) + m[3];
+        if (p < 1) requestAnimationFrame(step); else delete el.dataset.counting;
+      })(t0);
+    });
+  }
+
+  // ---------------- sign-in (fictional demo officer) ----------------
+  var AUTH_KEY = 'nl-signed-in';
+  function isSignedIn() { try { return sessionStorage.getItem(AUTH_KEY) === '1'; } catch (e) { return false; } }
+  function fillOfficer() {
+    var o = NL.officer;
+    $('#offName').textContent = o.name; $('#offName').title = 'Inspector ' + o.name + ' · ' + o.role + ' · ' + o.org;
+    $('#offRole').textContent = 'MOHAP · DXB T3 Desk 2';
+  }
+  function showLogin() {
+    var l = $('#login');
+    l.classList.remove('leaving'); l.hidden = false;
+    document.body.classList.add('locked');
+    $('#loginErr').hidden = true;
+    $('#loginBtn').disabled = false; $('#loginBtn').textContent = 'Sign in';
+    setTimeout(function () { $('#loginBtn').focus(); }, 60);
+  }
+  function doLogin(e) {
+    e.preventDefault();
+    var o = NL.officer, id = $('#loginId').value.trim().toUpperCase(), pw = $('#loginPw').value;
+    var form = $('#loginForm');
+    if (id !== o.id || pw !== o.password) {
+      $('#loginErr').hidden = false;
+      form.classList.remove('shake'); void form.offsetWidth; form.classList.add('shake');
+      return;
+    }
+    var btn = $('#loginBtn');
+    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Verifying officer credentials…';
+    setTimeout(function () {
+      try { sessionStorage.setItem(AUTH_KEY, '1'); } catch (err) { }
+      $('#login').classList.add('leaving');
+      setTimeout(function () { $('#login').hidden = true; document.body.classList.remove('locked'); }, 450);
+      fillOfficer();
+      log('DXB', o.short + ' signed in · ' + o.post, 'info');
+      go(S.screen);
+    }, 700);
+  }
+  function signOut() {
+    if (S.demo) S.demo.stop = true;
+    if (S.autoBelt) toggleAuto();
+    try { sessionStorage.removeItem(AUTH_KEY); } catch (e) { }
+    log('DXB', NL.officer.short + ' signed out', 'info');
+    showLogin();
+  }
+
   var RENDER = { dashboard: renderDashboard, lane: renderLane, 'case': renderCase, desk: renderDesk, hyper: renderHyper, predict: renderPredict, learn: renderLearn, models: renderModels };
 
   // ---------------- demo runner ----------------
@@ -967,7 +1033,7 @@
   ];
   function background() {
     S.stats.screened += 3 + Math.floor(Math.random() * 9);
-    if (S.screen === 'dashboard') renderKpis();
+    if (S.screen === 'dashboard' && !document.querySelector('#kpis [data-counting]')) renderKpis();
     if (Math.random() < 0.35) {
       var e = BG_EVENTS[Math.floor(Math.random() * BG_EVENTS.length)];
       if (e[2] === 'danger') S.stats.flags += 1;
@@ -1027,6 +1093,11 @@
     $('#learnGo').addEventListener('click', learnGo);
     $('#demoBtn').addEventListener('click', runDemo);
     initTheme();
+    $('#brandLink').addEventListener('click', function (e) { e.preventDefault(); go('dashboard'); });
+    $('#loginForm').addEventListener('submit', doLogin);
+    $('#signOut').addEventListener('click', signOut);
+    fillOfficer();
+    if (!isSignedIn()) showLogin();
 
     var start = (location.hash || '').replace('#', '');
     go(SCREENS[start] ? start : 'dashboard');

@@ -122,3 +122,12 @@ window.NL = window.NL || {};
       m1: { score: 82, label: 'Dense voids inside door panels', text: 'Door panels show organic-density fill in normally hollow cores (seen in 651-door seizure pattern).' } }
   ];
 })(window.NL);
+
+/* Fictional demo officer for the prototype's sign-in screen (not a real person). */
+window.NL.officer = {
+  id: 'MOHAP-DC-0427', password: 'demo',
+  name: 'Mariam Al Noor', short: 'Insp. M. Al Noor', initials: 'MN',
+  role: 'Pharmaceutical Control Inspector',
+  org: 'Ministry of Health and Prevention (MOHAP) · Drug Control Dept',
+  post: 'DXB Terminal 3 · Inspection Desk 2'
+};

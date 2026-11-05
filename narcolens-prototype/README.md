@@ -24,6 +24,7 @@ A federated learning loop retrains every site after each lab-confirmed seizure. 
 - Or serve the folder: `python3 -m http.server`, then open `http://localhost:8000`.
 
 ## How to test it (paste into Eureka)
+0. **Sign in** with the pre-filled demo account: officer ID `MOHAP-DC-0427`, password `demo`. Mariam Al Noor, MOHAP Pharmaceutical Control Inspector, is a fictional officer.
 1. Press **▶ Run full demo** (top right). It plays one bag end to end in about 60 seconds, with captions: X-ray flag → case → officer photo → hyperspectral ID → seizure → federated retraining.
 2. Or explore each screen from the left menu:
    - **Live Lane (M1):** the live model scans each belt bag. Tick *Ground truth* to check the AI's answer.

@@ -8,11 +8,31 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <div class="sim-banner" role="note">LIVE AI MODELS TRAINED ON SYNTHETIC DATA &middot; Presight Eureka 3.0 &middot; No real passenger, bag or seizure data is used</div>
+  <div class="aurora" aria-hidden="true"><i></i><i></i><i></i></div>
+
+  <div class="login" id="login" hidden>
+    <form class="login-card" id="loginForm" autocomplete="off" novalidate>
+      <svg class="logo login-logo" viewBox="0 0 40 40" aria-hidden="true">
+        <circle class="draw" cx="17" cy="17" r="12" fill="none" stroke="currentColor" stroke-width="3"/>
+        <path class="draw d2" d="M8 17h4l2.5-5 4 10 2.5-5h4" fill="none" stroke="#2dd4bf" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        <path class="draw d3" d="M26 26l9 9" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/>
+      </svg>
+      <h1>NarcoLens</h1>
+      <p class="login-sub">Drug Detection Network &middot; Officer sign-in</p>
+      <label class="field">Officer ID<input id="loginId" value="MOHAP-DC-0427" spellcheck="false"></label>
+      <label class="field">Password<input id="loginPw" type="password" value="demo"></label>
+      <p class="login-err" id="loginErr" hidden>Incorrect officer ID or password. Use the demo account below.</p>
+      <button class="btn primary block" type="submit" id="loginBtn">Sign in</button>
+      <div class="demo-acct">
+        <span class="avatar">MN</span>
+        <div><b>Mariam Al Noor</b><small>Pharmaceutical Control Inspector &middot; MOHAP Drug Control Dept</small><small class="demo-note">Demo account &middot; fictional officer &middot; ID MOHAP-DC-0427 &middot; password <code>demo</code></small></div>
+      </div>
+    </form>
+  </div>
 
   <div class="shell">
     <aside class="sidebar">
-      <div class="brand">
+      <a class="brand" id="brandLink" href="#dashboard" aria-label="NarcoLens – go to Command Dashboard">
         <svg class="logo" viewBox="0 0 40 40" aria-hidden="true">
           <circle cx="17" cy="17" r="12" fill="none" stroke="currentColor" stroke-width="3"/>
           <path d="M8 17h4l2.5-5 4 10 2.5-5h4" fill="none" stroke="#2dd4bf" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
@@ -22,7 +42,7 @@
           <b>NarcoLens</b>
           <small>AI drug-detection network</small>
         </div>
-      </div>
+      </a>
       <nav id="nav" aria-label="Screens">
         <a href="#dashboard" data-screen="dashboard"><span class="num">01</span><span>Command Dashboard</span></a>
         <a href="#lane" data-screen="lane"><span class="num">M1</span><span>Live Lane &middot; X-ray Vision</span></a>
@@ -33,10 +53,10 @@
         <a href="#learn" data-screen="learn"><span class="num">07</span><span>Learning Loop</span></a>
         <a href="#models" data-screen="models"><span class="num">AI</span><span>AI Models &middot; live test</span></a>
       </nav>
-      <div class="sidebar-foot">
-        <span>Sovereign &middot; on-prem</span>
-        <span>Human-in-the-loop</span>
-        <span>No nationality / ethnicity features</span>
+      <div class="officer" id="officerChip">
+        <span class="avatar">MN</span>
+        <div class="officer-txt"><b id="offName">Mariam Al Noor</b><small id="offRole">MOHAP &middot; DXB T3 Desk 2</small></div>
+        <button class="sign-out" id="signOut" type="button" title="Sign out" aria-label="Sign out">&#x23FB;</button>
       </div>
     </aside>
 
@@ -268,6 +288,7 @@
         </div>
         <div class="card" id="cardOthers"></div>
       </section>
+      <footer class="disclaimer">Live AI models trained on synthetic data &middot; Presight Eureka 3.0 prototype &middot; No real passenger, bag or seizure data is used &middot; The demo officer is fictional</footer>
     </main>
   </div>
 
