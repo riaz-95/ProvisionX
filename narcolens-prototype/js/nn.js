@@ -158,7 +158,7 @@
     x = pool2(relu(conv(x, m2.c2, 1, 1)));
     x = pool2(relu(conv(x, m2.c3, 1, 1)));
     var h = dense(x.d, m2.f1); for (var i = 0; i < h.length; i++) if (h[i] < 0) h[i] = 0;
-    var o = dense(h, m2.f2), mx = Math.max.apply(null, o), e = o.map(function (v) { return Math.exp(v - mx); }), z = e.reduce(function (a, b) { return a + b; }, 0);
+    var o = Array.from(dense(h, m2.f2)), mx = Math.max.apply(null, o), e = o.map(function (v) { return Math.exp(v - mx); }), z = e.reduce(function (a, b) { return a + b; }, 0);
     return e.map(function (v) { return v / z; });
   }
   var cropCanvas = document.createElement('canvas'); cropCanvas.width = 48; cropCanvas.height = 48;

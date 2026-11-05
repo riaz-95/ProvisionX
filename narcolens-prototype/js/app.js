@@ -210,6 +210,12 @@
     }
     if (L.scanning) { el.innerHTML = '<div class="placeholder"><span class="spinner"></span>Scanning&hellip;</div>'; return; }
     var sc = L.fused, l = lvl(sc), b = L.bag;
+    if (L.ood) {
+      el.innerHTML = '<div class="result-h"><h3>AI result · uploaded image</h3><span class="pill mid">NOT AN X-RAY</span></div>' +
+        '<div class="finding low"><b>Out of distribution &ndash; result not reliable.</b><br>This image does not look like a dual-energy bag scan (' + Math.round(L.xl.light * 100) + '% bright background, ' + Math.round(L.xl.warm * 100) + '% organic/mixed colour). M1 was trained only on X-ray scans, so its heatmap (raw score ' + L.m1 + ') is shown for transparency but no decision is made.</div>' +
+        '<p class="muted small">A production system would refuse non-scanner input in the same way: an out-of-distribution check runs before any risk score is used.</p>';
+      return;
+    }
     var findings = L.res && L.res.boxes.length ? L.res.boxes.slice(0, 3).map(function (f, i) {
       return '<div class="finding ' + (f.score < 60 ? 'low' : '') + '"><b>Region ' + (i + 1) + '</b> · concealment probability ' + f.score + '/100 · ' + (f.px / (112 * 64) * 100).toFixed(1) + '% of scan area</div>';
     }).join('') : '<div class="finding none"><b>No anomaly</b><br>' + esc(m1Text(L.res)) + '</div>';
@@ -346,12 +352,23 @@
       });
     });
   }
+  // Out-of-distribution guard: M1 was trained on dual-energy scans with a bright background.
+  function xrayLikeness(cv) {
+    var d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data, n = 0, light = 0, warm = 0;
+    for (var i = 0; i < d.length; i += 16) {
+      var r = d[i], g = d[i + 1], b = d[i + 2], y = 0.299 * r + 0.587 * g + 0.114 * b;
+      n++; if (y > 200) light++;
+      if (r > b + 20 || g > b + 10) warm++;
+    }
+    return { light: light / n, warm: warm / n };
+  }
   function scanUpload(img) {
     S.lastLane = { scanning: true, kind: 'upload' }; renderLaneResult();
     $('#laneTag').textContent = 'uploaded image';
     NL.scanScene($('#xray'), { image: img }, {
       onDone: function (res) {
-        S.lastLane = { kind: 'upload', res: res, m1: res ? res.score : 0, fused: res ? res.score : 0, truth: null };
+        var xl = xrayLikeness($('#xray')._off), ood = xl.light < 0.45 || xl.warm < 0.15;
+        S.lastLane = { kind: 'upload', res: res, m1: res ? res.score : 0, fused: res ? res.score : 0, truth: null, ood: ood, xl: xl };
         $('#latency').textContent = res ? res.ms.toFixed(0) + ' ms' : 'n/a';
         renderLaneResult();
       }
@@ -478,7 +495,7 @@
   function deskSummary() {
     var s = NL.deskSamples[S.deskSample], im = imprintSummary(), parts = [];
     if (im) parts.push(im.hits + '/' + im.n + ' tablets classified Captagon-style (avg ' + Math.round(im.avg * 100) + '%)');
-    if (!s.registry.ok) parts.push(S.deskSample === 'peptide-vial' ? 'unregistered injectable peptide' : 'label not in registry');
+    if (!s.registry.ok) parts.push({ 'peptide-vial': 'unregistered injectable peptide', 'protein-tub': 'label not in registry', 'pill-strip': 'no registered medicine matches' }[S.deskSample]);
     return parts.join(' + ');
   }
   function renderDesk() {
