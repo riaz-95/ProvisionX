@@ -919,3 +919,45 @@ html[dir="rtl"] .field, html[dir="rtl"] .kpi .lbl, html[dir="rtl"] .mc small, ht
 #netSvg .ed, #netSvg .nd-shape, #netSvg .nd-live { vector-effect: non-scaling-stroke; }
 #netSvg .nd > :not(.nd-live) { transform: scale(var(--k, 1)); transform-box: view-box; transform-origin: 0 0; }
 #netSvg .nd-live { scale: var(--k, 1); }
+
+
+/* ======================= v9: interactive federated network ======================= */
+.fed-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+.fed-priv { display: inline-flex; align-items: center; gap: 6px; }
+#fedAuto.on { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.fed-steps { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: 11.5px; margin-bottom: 8px; }
+.fed-steps .fs { padding: 4px 8px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); background: var(--glass); transition: all .25s; }
+.fed-steps .fs.on { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); font-weight: 700; }
+.fed-steps .fs.done { color: var(--text); }
+.fed-steps i { color: var(--muted); font-style: normal; }
+.fednet .fnode, .fednet .fcore { cursor: pointer; outline: none; }
+.fednet .fn-ring { fill: none; stroke: var(--accent); stroke-width: 2; opacity: 0; transition: opacity .2s; }
+.fednet .fnode:hover .fn-ring, .fednet .fnode:focus .fn-ring, .fednet .fnode.sel .fn-ring { opacity: 1; }
+.fednet .fn-ver { font: 700 11px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fill: var(--accent); pointer-events: none; }
+.fednet .fnode.off .node { stroke: var(--muted); stroke-dasharray: 4 3; fill: var(--panel-2); }
+.fednet .fnode.off .fn-ver, .fednet .fnode.off .site-lbl { fill: var(--muted); }
+.fednet .link.off { opacity: .25; }
+.fednet .fnode.stale:not(.off) .node { stroke: var(--warn); }
+.fednet .fnode.stale .fn-ver { fill: var(--warn); }
+.fednet .fnode.ready .node { fill: var(--ok-soft); stroke: var(--ok); }
+.fednet .fnode.train .node { animation: trainPulse .5s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: center; }
+@keyframes trainPulse { to { transform: scale(1.18); fill: var(--accent-soft); } }
+.fednet .fnode.poisoned .node { stroke: var(--danger); stroke-width: 4; fill: var(--danger-soft); }
+.fednet .fcore.agg .core { animation: trainPulse .35s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: center; }
+.fednet .fcore.sel .core { stroke: #fff; stroke-width: 3; }
+.fednet .core-lbl.sm { font-size: 10.5px; font-weight: 600; }
+.fednet .pk { font: 700 9px system-ui, sans-serif; fill: #111; pointer-events: none; }
+.fed-status { margin: 6px 0 2px; font-size: 13px; font-weight: 600; min-height: 18px; }
+.fed-gain { margin: 0 0 10px; font-size: 12.5px; color: var(--muted); }
+.fed-gain b { color: var(--ok); }
+#fedSite .nd-card .row { margin-top: 6px; }
+.fchart { width: 100%; height: auto; display: block; }
+.fchart .cg { stroke: var(--chart-grid); stroke-width: 1; }
+.fchart .ct { font-size: 9px; fill: var(--muted); }
+.fchart .cl { fill: none; stroke: var(--accent); stroke-width: 2.2; }
+.fchart .cd { fill: var(--accent); stroke: var(--panel); stroke-width: 1.5; }
+.fchart .cd.rej { fill: var(--danger); }
+.fed-log { list-style: none; margin: 0; padding: 0; font-size: 12.5px; max-height: 230px; overflow: auto; }
+.fed-log li { display: grid; grid-template-columns: 44px 1fr; gap: 8px; padding: 6px 0; border-bottom: 1px dashed var(--border); }
+.fed-log time { font: 11.5px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--muted); }
+.fed-log li.bad span { color: var(--danger); font-weight: 600; }

@@ -38,7 +38,7 @@ A federated learning loop retrains every site after each lab-confirmed seizure. 
    - **Hyperspectral ID (M3):** press *Auto-scan*, then click any pixel to see its spectrum against the library. *Cut powder* shows unmixing of methamphetamine and caffeine. *Clean supplement* is a control sample.
    - **Challenge · You vs AI:** 5 fresh random bags. Click where you think drugs are hidden, then compare with the model.
    - **Novel-Drug Predictor (M4):** press *Run prediction cycle*.
-   - **Learning Loop:** press *Lab confirms → retrain network*.
+   - **Learning Loop:** an interactive federated-learning simulator. Click a site to train it locally or take it offline. Run rounds (or auto-run), set the privacy level, and switch on a *poisoned update* to see the core reject it. Watch the recall curve and the round log.
    - **AI Models:** model cards with held-out test metrics. Press *Test on 40 brand-new random bags* to benchmark the model live.
 4. The theme button (top right) switches between light and dark mode. The layout works on mobile.
 

@@ -283,29 +283,26 @@
       </section>
 
       <!-- LEARNING LOOP -->
-      <section class="screen" id="screen-learn" hidden>
-        <div class="grid-2">
+      <section class="screen" id="screen-learn" hidden data-noi18n>
+        <div class="kpis three" id="fedKpis"></div>
+        <div class="grid-lane">
           <div class="card">
-            <div class="card-h"><h3>Federated network</h3><span class="pill" id="modelVer"></span></div>
-            <svg id="fedNet" class="fednet" viewBox="0 0 600 360" role="img" aria-label="Federated learning network"></svg>
-            <div class="row">
-              <button class="btn primary" id="learnGo" type="button">Lab confirms &rarr; retrain network</button>
-              <span class="muted small" id="learnStatus"></span>
+            <div class="fed-controls">
+              <button class="btn primary" id="learnGo" type="button">&#9654; Run 1 round</button>
+              <button class="btn" id="fedAuto" type="button">Auto-run rounds</button>
+              <span id="fedPriv" class="fed-priv"></span>
+              <label class="nt-chip" style="--c:#ef4444"><input type="checkbox" id="fedPoison"><i></i><span id="fedPoisonLbl">Simulate a poisoned update</span></label>
             </div>
+            <div class="fed-steps" id="fedSteps"></div>
+            <svg id="fedNet" class="fednet" viewBox="0 0 600 360" role="img" aria-label="Federated learning network"></svg>
+            <p class="fed-status"><span id="learnStatus"></span></p>
+            <p class="fed-gain" id="fedGain"></p>
+            <div id="fedSite"></div>
           </div>
           <div class="stack">
             <div class="card" id="learnCase"></div>
-            <div class="card">
-              <h3>The loop</h3>
-              <ol class="steps" id="learnSteps">
-                <li>Officer confirms the seizure in the case</li>
-                <li>Forensic lab confirms the substance (legal proof)</li>
-                <li>Each site trains on its own confirmed cases &ndash; images never leave the site</li>
-                <li>Only encrypted model updates go to the NarcoLens core</li>
-                <li>New model version is pushed to every scanner and desk</li>
-              </ol>
-            </div>
-            <div class="card"><h3>Model performance</h3><div id="learnMetrics"></div></div>
+            <div class="card"><div class="card-h"><h3 id="fedChartH">Recall per round</h3></div><div id="fedChart"></div></div>
+            <div class="card"><div class="card-h"><h3 id="fedLogH">Round log</h3></div><ol class="fed-log" id="fedLog"></ol></div>
           </div>
         </div>
       </section>
@@ -352,6 +349,7 @@
   <script src="js/i18n.js"></script>
   <script src="js/network.js"></script>
   <script src="js/app.js"></script>
+  <script src="js/federated.js"></script>
   <script src="js/extras.js"></script>
 </body>
 </html>

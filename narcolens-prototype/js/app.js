@@ -913,112 +913,29 @@
     }, 2900);
   }
 
-  // ---------------- learning loop ----------------
-  var CORE = { x: 300, y: 180 };
-  function nodePos(i) { var a = -Math.PI / 2 + i * 2 * Math.PI / NL.sites.length; return { x: CORE.x + Math.cos(a) * 140, y: CORE.y + Math.sin(a) * 135 }; }
-  function renderFedNet() {
-    var h = '';
-    NL.sites.forEach(function (s, i) { var p = nodePos(i); h += '<line class="link" x1="' + CORE.x + '" y1="' + CORE.y + '" x2="' + p.x + '" y2="' + p.y + '"/>'; });
-    NL.sites.forEach(function (s, i) {
-      var p = nodePos(i), below = p.y > CORE.y + 20;
-      h += '<circle class="node" id="node-' + s.id + '" cx="' + p.x + '" cy="' + p.y + '" r="15"/>' +
-        '<text class="site-lbl" x="' + p.x + '" y="' + (below ? p.y + 32 : p.y - 22) + '" text-anchor="middle">' + esc(s.name) + '</text>';
-    });
-    h += '<circle class="core" cx="' + CORE.x + '" cy="' + CORE.y + '" r="40"/><text class="core-lbl" x="' + CORE.x + '" y="' + (CORE.y - 2) + '" text-anchor="middle">NarcoLens</text>' +
-      '<text class="core-lbl" x="' + CORE.x + '" y="' + (CORE.y + 14) + '" text-anchor="middle" style="font-size:10.5px;font-weight:600">core · on-prem</text><g id="packets"></g>';
-    $('#fedNet').innerHTML = h;
-  }
+  // ---------------- learning loop (interactive federated network lives in js/federated.js) ----------------
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
   function renderLearn() {
-    var m = S.model;
-    $('#modelVer').textContent = 'Model v' + m.v.join('.');
-    $('#modelVer').className = 'pill accent';
-    if (!$('#fedNet').childNodes.length) renderFedNet();
     var c = S.cases.find(function (x) { return /Seized/.test(x.status); });
     var done = S.cases.find(function (x) { return /confirmed/.test(x.status); });
-    $('#learnCase').innerHTML = c
-      ? '<div class="card-h"><h3>Pending lab result</h3><span class="pill high">' + c.id + '</span></div><p><b>' + esc(c.tag) + '</b> · ' + esc(c.evidence.m3 ? c.evidence.m3.text : '') + '</p><p class="muted small">AI evidence pack: X-ray, officer photos, OCR, spectra and fusion scores, under chain of custody.</p>'
-      : done
-        ? '<div class="card-h"><h3>Last confirmed seizure</h3><span class="pill low">' + done.id + '</span></div><p><b>' + esc(done.tag) + '</b> · ' + esc(done.status) + '</p>'
-        : '<div class="card-h"><h3>Waiting for a seizure</h3></div><p class="muted">Run the full demo, or seize a case after M3 identifies a substance. You can still trigger a scheduled retraining round below.</p>';
-    $('#learnMetrics').innerHTML =
-      '<div class="metric"><span>Detection recall (held-out seizures)</span><b>' + m.recall.toFixed(1) + '%' + (m.dRecall ? '<span class="delta">+' + m.dRecall + '</span>' : '') + '</b></div>' +
-      '<div class="metric"><span>Extra false alarms per lane</span><b>' + m.far.toFixed(1) + '%' + (m.dFar ? '<span class="delta">−' + m.dFar + '</span>' : '') + '</b></div>' +
-      '<div class="metric"><span>Sites on current model</span><b>' + NL.sites.length + ' / ' + NL.sites.length + '</b></div>' +
-      '<div class="metric"><span>Raw images shared between sites</span><b>0</b></div>';
-  }
-  function setStep(n) {
-    $$('#learnSteps li').forEach(function (li, i) { li.className = i < n ? 'done' : i === n ? 'active' : ''; });
-  }
-  function animatePackets(toCore, color, dur) {
-    return new Promise(function (resolve) {
-      var g = $('#packets'), ns = 'http://www.w3.org/2000/svg';
-      if (!g) return resolve();
-      var dots = NL.sites.map(function (s, i) {
-        var c = document.createElementNS(ns, 'circle');
-        c.setAttribute('r', 6); c.setAttribute('fill', color);
-        g.appendChild(c);
-        return { el: c, p: nodePos(i), delay: i * 70 };
-      });
-      var start = performance.now();
-      function f(now) {
-        var all = true;
-        dots.forEach(function (d) {
-          var t = Math.max(0, Math.min(1, (now - start - d.delay) / dur));
-          if (t < 1) all = false;
-          var e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-          var a = toCore ? d.p : CORE, b = toCore ? CORE : d.p;
-          d.el.setAttribute('cx', a.x + (b.x - a.x) * e);
-          d.el.setAttribute('cy', a.y + (b.y - a.y) * e);
-        });
-        if (!all) requestAnimationFrame(f);
-        else { dots.forEach(function (d) { d.el.remove(); }); resolve(); }
-      }
-      requestAnimationFrame(f);
+    NL.fedRender({
+      pending: c ? { id: c.id, tag: esc(c.tag), text: esc(c.evidence.m3 ? c.evidence.m3.text : '') } : null,
+      done: done ? { id: done.id, tag: esc(done.tag) } : null
     });
+    $('#fedChartH').textContent = NL.i18n && NL.i18n.lang === 'ar' ? 'الاستدعاء لكل جولة' : 'Recall per round';
+    $('#fedLogH').textContent = NL.i18n && NL.i18n.lang === 'ar' ? 'سجل الجولات' : 'Round log';
   }
-  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  // A federated round; when a seizure is waiting for the lab, the lab confirms it first.
   function learnGo() {
-    var btn = $('#learnGo');
-    btn.disabled = true;
-    var st = $('#learnStatus');
+    if (NL.fed.busy) return Promise.resolve();
     var c = S.cases.find(function (x) { return /Seized/.test(x.status); });
-    setStep(0);
-    return sleep(400).then(function () {
-      setStep(1);
-      st.textContent = 'Forensic lab confirms substance…';
-      if (c) {
-        c.status = 'Seizure confirmed by lab';
-        addTimeline(c, 'LAB', 'Lab confirmed: ' + (c.evidence.m3 ? c.evidence.m3.text : 'controlled substance'), 'Case closed. Labelled images and spectra added to local training set.', 'danger');
-        S.stats.seizures += 1;
-        log(c.site, c.id + ' lab-confirmed → added to training data', 'danger');
-      }
-      return sleep(900);
-    }).then(function () {
-      setStep(2); st.textContent = 'Each site trains locally on its own confirmed cases…';
-      $$('#fedNet .node').forEach(function (n) { n.classList.add('sync'); });
-      return sleep(900);
-    }).then(function () {
-      setStep(3); st.textContent = 'Encrypted model updates → core (no images)';
-      return animatePackets(true, '#f59e0b', 1100);
-    }).then(function () {
-      st.textContent = 'Core aggregates updates…';
-      return sleep(600);
-    }).then(function () {
-      setStep(4);
-      var m = S.model;
-      m.v[2] += 1; m.recall = Math.min(99, m.recall + 0.4); m.far = Math.max(1, m.far - 0.2);
-      m.dRecall = '0.4'; m.dFar = '0.2';
-      S.stats.far = m.far;
-      st.textContent = 'Model v' + m.v.join('.') + ' → all sites';
-      return animatePackets(false, '#2dd4bf', 1100);
-    }).then(function () {
-      setStep(5);
-      $$('#fedNet .node').forEach(function (n) { n.classList.remove('sync'); });
-      st.textContent = 'All ' + NL.sites.length + ' sites updated to v' + S.model.v.join('.');
-      log('DXB', 'Federated update v' + S.model.v.join('.') + ' deployed to all sites', 'info');
-      renderLearn();
-      btn.disabled = false;
-    });
+    if (c) {
+      c.status = 'Seizure confirmed by lab';
+      addTimeline(c, 'LAB', 'Lab confirmed: ' + (c.evidence.m3 ? c.evidence.m3.text : 'controlled substance'), 'Case closed. Labelled images and spectra added to local training set.', 'danger');
+      S.stats.seizures += 1;
+      log(c.site, c.id + ' lab-confirmed → added to training data', 'danger');
+    }
+    return NL.fed.round({ fromLab: !!c }).then(function () { if (S.screen === 'learn') renderLearn(); });
   }
 
   // ---------------- info popovers (ⓘ buttons) ----------------
@@ -1416,6 +1333,6 @@
     setInterval(background, 2600);
   }
 
-  NL.app = { go: go, runDemo: runDemo, state: S, scanNext: scanNext, setLaneMode: setLaneMode };
+  NL.app = { go: go, runDemo: runDemo, state: S, scanNext: scanNext, setLaneMode: setLaneMode, log: log };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })(window.NL);
