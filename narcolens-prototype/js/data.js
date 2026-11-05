@@ -23,13 +23,13 @@ window.NL = window.NL || {};
 
   // Entry points (positions on the schematic map, 600x340 viewBox).
   NL.sites = [
-    { id: 'DXB', name: 'DXB Airport', x: 380, y: 150, lx: 12, ly: -8, anchor: 'start' },
-    { id: 'SHJ', name: 'Sharjah Cargo', x: 412, y: 128, lx: 12, ly: -4, anchor: 'start' },
-    { id: 'POST', name: 'Postal & Courier Hub', x: 352, y: 170, lx: 12, ly: 14, anchor: 'start' },
-    { id: 'DWC', name: 'Al Maktoum (DWC)', x: 318, y: 204, lx: 10, ly: 18, anchor: 'start' },
-    { id: 'JEA', name: 'Jebel Ali Port', x: 282, y: 186, lx: -12, ly: -10, anchor: 'end' },
-    { id: 'KZP', name: 'Khalifa Port', x: 224, y: 216, lx: -10, ly: -10, anchor: 'end' },
-    { id: 'AUH', name: 'Abu Dhabi Airport', x: 182, y: 238, lx: 0, ly: 24, anchor: 'middle' }
+    { id: 'DXB', name: 'DXB Airport', kind: 'airport', lat: 25.253, lon: 55.366, lx: -10, ly: -9, anchor: 'end' },
+    { id: 'SHJ', name: 'Sharjah Cargo', kind: 'airport', lat: 25.329, lon: 55.517, lx: 10, ly: -6, anchor: 'start' },
+    { id: 'POST', name: 'Postal & Courier Hub', kind: 'post', lat: 25.12, lon: 55.25, lx: 10, ly: 10, anchor: 'start' },
+    { id: 'DWC', name: 'Al Maktoum (DWC)', kind: 'airport', lat: 24.896, lon: 55.161, lx: 10, ly: 14, anchor: 'start' },
+    { id: 'JEA', name: 'Jebel Ali Port', kind: 'port', lat: 25.011, lon: 55.061, lx: -10, ly: -4, anchor: 'end' },
+    { id: 'KZP', name: 'Khalifa Port', kind: 'port', lat: 24.806, lon: 54.645, lx: -10, ly: 0, anchor: 'end' },
+    { id: 'AUH', name: 'Abu Dhabi Airport', kind: 'airport', lat: 24.433, lon: 54.651, lx: -10, ly: 12, anchor: 'end' }
   ];
   NL.site = function (id) { return NL.sites.find(function (s) { return s.id === id; }); };
 
@@ -90,7 +90,11 @@ window.NL = window.NL || {};
     dates: { m1: 41, label: 'Dense organic food box', text: 'Food-like organic density (dates / sweets profile). Below threshold – cleared, image kept for learning.' },
     buttons: { m1: 79, label: 'Oversized dense buttons', text: 'Garment buttons ~3x denser and larger than typical – consistent with pressed tablets hidden in buttons.' },
     vials: { m1: 72, label: 'Cluster of liquid / powder vials', text: '14 small glass vials with organic contents in a toiletry bag – possible unregistered injectable peptides or hormones.' },
-    'false-bottom': { m1: 84, label: 'Uniform slab under base panel', text: 'Continuous organic layer beneath the base panel – false-bottom construction suspected.' }
+    'false-bottom': { m1: 84, label: 'Uniform slab under base panel', text: 'Continuous organic layer beneath the base panel – false-bottom construction suspected.' },
+    double: { m1: 90, label: 'Two concealments', text: 'Wrapped packet plus dense shirt buttons in the same bag.' },
+    'under-laptop': { m1: 80, label: 'Packet under laptop', text: 'Organic packet overlapping a laptop – hard visual case.' },
+    'dense-clean': { m1: 10, label: 'Clean but dense', text: 'Books, a clean protein tub and dates – dense organics with no drugs.' },
+    rotated: { m1: 85, label: 'Rotated packets', text: 'Two packets at odd angles among shoes.' }
   };
 
   NL.bags = [
@@ -107,7 +111,15 @@ window.NL = window.NL || {};
     { tag: 'BAG-T3-118230', site: 'DXB', lane: 'T3 · Lane 4', route: 'Direct arrival', weight: 16.1, preScore: 40,
       preText: 'Traveller account linked to 3 prior parcel shipments of "cosmetics".', concealment: 'vials', seed: 66 },
     { tag: 'BAG-T3-118237', site: 'DXB', lane: 'T3 · Lane 4', route: 'Transfer · Route pattern R-17', weight: 25.0, preScore: 30,
-      preText: 'Route pattern R-17; bag checked at last minute.', concealment: 'false-bottom', seed: 77 }
+      preText: 'Route pattern R-17; bag checked at last minute.', concealment: 'false-bottom', seed: 77 },
+    { tag: 'BAG-T3-118241', site: 'DXB', lane: 'T3 · Lane 4', route: 'Tricky · two concealments', weight: 24.1, preScore: 33,
+      preText: 'Tricky case: two different concealments in one bag.', concealment: 'double', seed: 88, tricky: true },
+    { tag: 'BAG-T3-118244', site: 'DXB', lane: 'T3 · Lane 4', route: 'Tricky · packet under laptop', weight: 17.4, preScore: 25,
+      preText: 'Tricky case: packet overlapping electronics.', concealment: 'under-laptop', seed: 99, tricky: true },
+    { tag: 'BAG-T3-118249', site: 'DXB', lane: 'T3 · Lane 4', route: 'Tricky · clean but dense', weight: 22.8, preScore: 15,
+      preText: 'Tricky case: dense organic items, no drugs.', concealment: 'dense-clean', seed: 111, tricky: true },
+    { tag: 'BAG-T3-118252', site: 'DXB', lane: 'T3 · Lane 4', route: 'Tricky · rotated packets', weight: 20.5, preScore: 28,
+      preText: 'Tricky case: packets at odd angles among shoes.', concealment: 'rotated', seed: 122, tricky: true }
   ];
 
   // Cases already open at other sites when the demo starts.

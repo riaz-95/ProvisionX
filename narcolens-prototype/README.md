@@ -27,12 +27,14 @@ A federated learning loop retrains every site after each lab-confirmed seizure. 
 0. **Sign in** with the pre-filled demo account: officer ID `MOHAP-DC-0427`, password `demo`. Mariam Al Noor, MOHAP Pharmaceutical Control Inspector, is a fictional officer.
 1. Press **▶ Run full demo** (top right). It plays one bag end to end in about 60 seconds, with captions: X-ray flag → case → officer photo → hyperspectral ID → seizure → federated retraining.
 2. Or explore each screen from the left menu:
-   - **Live Lane (M1):** the live model scans each belt bag. Tick *Ground truth* to check the AI's answer.
+   - **Command Dashboard:** click any entry point on the UAE map. It zooms in and shows site stats. *Open new case here* runs the live model on a fresh scan and opens the case.
+   - **Live Lane (M1):** the live model scans each belt bag, including 4 *tricky* bags. Tick *Ground truth* to check the AI's answer.
      - **Build your own bag:** add items, hide drugs, drag things around, then press *Scan with AI*.
      - **Upload a scan:** run the model on any image.
-   - **Inspection Case (M5):** see the evidence timeline and how each module moves the fused score. Try *Open bag*, *Re-scan* or *Clear*.
-   - **Inspection Desk (M2):** press *Analyse photo*. The live model classifies every tablet crop. Then use the **Imprint pad**: draw two crescents ( ), a line or a letter, or press *Random example*.
-   - **Hyperspectral ID (M3):** press *Auto-scan*, then click any pixel to see its spectrum against the library. *Clean supplement* is a control sample.
+   - **Inspection Case (M5):** see the evidence timeline and how each module moves the fused score. Try *Open bag*, *Re-scan* or *Clear*. Open **What-if** and move the sliders to see how each piece of evidence changes the decision.
+   - **Inspection Desk (M2):** press *Analyse photo*. The live model classifies every tablet crop, and a **forensic physical profile** measures diameter, shape and colour from the mm scale bar. *Mixed tablets* shows the model separating Captagon-style tablets from licensed-looking ones. Then use the **Imprint pad**: draw two crescents ( ), a line or a letter, or press *Random example*.
+   - **Hyperspectral ID (M3):** press *Auto-scan*, then click any pixel to see its spectrum against the library. *Cut powder* shows unmixing of methamphetamine and caffeine. *Clean supplement* is a control sample.
+   - **Challenge · You vs AI:** 5 fresh random bags. Click where you think drugs are hidden, then compare with the model.
    - **Novel-Drug Predictor (M4):** press *Run prediction cycle*.
    - **Learning Loop:** press *Lab confirms → retrain network*.
    - **AI Models:** model cards with held-out test metrics. Press *Test on 40 brand-new random bags* to benchmark the model live.

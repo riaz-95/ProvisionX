@@ -211,9 +211,14 @@
       dates: { type: 'dates', x: 550, y: 282, w: 160, h: 104, rot: 0 },
       buttons: { type: 'buttons', x: 296, y: 276, w: 210, h: 160, rot: 0 },
       vials: { type: 'vials', x: 552, y: 142, w: 200, h: 112, rot: 0 },
-      'false-bottom': { type: 'falsebottom', x: 380, y: 366, w: 600, h: 28, rot: 0 }
+      'false-bottom': { type: 'falsebottom', x: 380, y: 366, w: 600, h: 28, rot: 0 },
+      double: [{ type: 'packet', x: 230, y: 300, w: 110, h: 60, rot: 0.2 }, { type: 'buttons', x: 540, y: 210, w: 200, h: 160, rot: 0 }],
+      'under-laptop': [{ type: 'packet', x: 330, y: 215, w: 110, h: 55, rot: 0 }, { type: 'laptop', x: 335, y: 205, w: 230, h: 150, rot: 0 }],
+      'dense-clean': [{ type: 'books', x: 250, y: 250, w: 150, h: 110, rot: 0.1 }, { type: 'tubClean', x: 540, y: 255, w: 140, h: 140, rot: 0 }, { type: 'dates', x: 420, y: 130, w: 160, h: 90, rot: 0 }],
+      rotated: [{ type: 'shoes', x: 380, y: 300, w: 140, h: 100, rot: 0.1 }, { type: 'packet', x: 260, y: 270, w: 95, h: 48, rot: 0.75 }, { type: 'packet', x: 500, y: 160, w: 85, h: 42, rot: -0.9 }]
     }[concealment];
-    if (add) { add.seed = seed * 7; sc.items.push(add); }
+    if (concealment === 'dense-clean' || concealment === 'under-laptop') sc.items = sc.items.filter(function (it) { return it.type !== 'laptop'; });
+    if (add) [].concat(add).forEach(function (it, i) { it.seed = seed * 7 + i; sc.items.push(it); });
     return sc;
   };
 

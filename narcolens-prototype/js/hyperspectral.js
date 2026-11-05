@@ -29,10 +29,22 @@
   NL.hyperScenes = {
     tub: { name: 'Sealed tub (case bag)', seed: 101 },
     vials: { name: 'Peptide vials', seed: 202 },
-    clean: { name: 'Clean supplement (control)', seed: 303 }
+    clean: { name: 'Clean supplement (control)', seed: 303 },
+    cut: { name: 'Cut powder (zip bag)', seed: 404 }
   };
 
   function mixAt(scene, x, y) {
+    if (scene === 'cut') {
+      if (x >= 12 && x < 58 && y >= 10 && y < 56) { // zip bag: methamphetamine cut with caffeine
+        if (x < 14 || x > 55 || y < 12 || y > 53) return { hdpe: 0.9, meth: 0.1 };
+        return { meth: 0.62, caffeine: 0.38 };
+      }
+      if (x >= 66 && x < 88 && y >= 18 && y < 48) { // sugar sachet (benign control)
+        if (x < 68 || x > 85 || y < 20 || y > 45) return { hdpe: 0.9, sugar: 0.1 };
+        return { sugar: 1 };
+      }
+      return { bg: 1 };
+    }
     if (scene === 'vials') {
       for (var v = 0; v < 4; v++) {
         var vx = 14 + v * 20;

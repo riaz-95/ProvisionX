@@ -52,11 +52,12 @@
         <a href="#predict" data-screen="predict"><span class="num">M4</span><span>Novel-Drug Predictor</span></a>
         <a href="#learn" data-screen="learn"><span class="num">07</span><span>Learning Loop</span></a>
         <a href="#models" data-screen="models"><span class="num">AI</span><span>AI Models &middot; live test</span></a>
+        <a href="#challenge" data-screen="challenge"><span class="num">VS</span><span>Challenge &middot; You vs AI</span></a>
       </nav>
       <div class="officer" id="officerChip">
         <span class="avatar">MN</span>
         <div class="officer-txt"><b id="offName">Mariam Al Noor</b><small id="offRole">MOHAP &middot; DXB T3 Desk 2</small></div>
-        <button class="sign-out" id="signOut" type="button" title="Sign out" aria-label="Sign out">&#x23FB;</button>
+        <button class="sign-out" id="signOut" type="button" title="Sign out" aria-label="Sign out"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg></button>
       </div>
     </aside>
 
@@ -68,7 +69,8 @@
           <div class="badges" id="badges"></div>
         </div>
         <div class="top-actions">
-          <span class="clock" id="clock" title="Simulated clock"></span>
+          <span class="clock" id="clock" title="Simulated local time at Dubai"></span>
+          <span class="demo-chip" id="demoChip" hidden><b id="demoStep">Step 1 of 8</b><span id="demoTime">0:00</span><i><b id="demoBar"></b></i></span>
           <button class="btn primary" id="demoBtn" type="button">&#9654; Run full demo</button>
           <button class="btn ghost icon" id="themeBtn" type="button" aria-label="Toggle light / dark theme" title="Toggle theme"><svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><circle cx="10" cy="10" r="7.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M10 2.5a7.5 7.5 0 0 1 0 15z" fill="currentColor"/></svg></button>
         </div>
@@ -79,8 +81,8 @@
         <div class="kpis" id="kpis"></div>
         <div class="grid-2">
           <div class="card">
-            <div class="card-h"><h3>UAE entry points running NarcoLens</h3><span class="pill live">&#9679; Live</span></div>
-            <svg id="map" class="map" viewBox="0 0 600 340" role="img" aria-label="Schematic map of UAE entry points"></svg>
+            <div class="card-h"><h3>UAE entry points running NarcoLens</h3><span class="muted small">Click a site to zoom in</span><span class="pill live">&#9679; Live</span></div>
+            <div class="map-wrap"><svg id="map" class="map" viewBox="0 0 600 340" role="img" aria-label="Map of UAE entry points"></svg><div class="site-card" id="siteCard" hidden></div></div>
             <div class="legend"><span><i class="dot ok"></i>Bag / parcel cleared</span><span><i class="dot danger"></i>AI flag raised</span></div>
           </div>
           <div class="stack">
@@ -280,6 +282,22 @@
           </div>
         </div>
       </section>
+      <!-- CHALLENGE -->
+      <section class="screen" id="screen-challenge" hidden>
+        <div class="grid-lane">
+          <div class="card">
+            <div class="card-h"><h3 id="chRound">Round 1 of 5</h3><span class="muted small" id="chHint">Click where you think drugs are hidden &ndash; or press &ldquo;Looks clean&rdquo;.</span></div>
+            <div class="xray-wrap"><canvas id="chCanvas" width="760" height="440" aria-label="X-ray to inspect"></canvas></div>
+            <div class="row">
+              <button class="btn" id="chClean" type="button">Looks clean</button>
+              <button class="btn primary" id="chNext" type="button" hidden>Next bag &rarr;</button>
+              <button class="btn ghost" id="chRestart" type="button">Restart</button>
+            </div>
+          </div>
+          <div class="card" id="chBoard"></div>
+        </div>
+      </section>
+
       <!-- AI MODELS -->
       <section class="screen" id="screen-models" hidden>
         <div class="grid-2 even">
@@ -298,6 +316,7 @@
   </div>
 
   <script src="js/data.js"></script>
+  <script src="js/map_uae.js"></script>
   <script src="js/xray.js"></script>
   <script src="js/nn.js"></script>
   <script src="js/models/models.js"></script>

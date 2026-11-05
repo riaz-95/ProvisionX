@@ -13,6 +13,7 @@
     hyper: { title: 'Hyperspectral ID · M3 Substance Identification', sub: 'A hyperspectral camera sees chemistry through packaging. AI matches every pixel\'s spectrum to the drug library – without opening the pouch.' },
     predict: { title: 'Novel-Drug Predictor · M4', sub: 'Predicts the spectral fingerprint of new synthetic-drug variants before they are ever seized, and pushes them into the M3 library.' },
     learn: { title: 'Learning Loop · Federated Retraining', sub: 'Every confirmed seizure makes every site smarter. Models train locally; only model updates – never raw images – leave a site.' },
+    challenge: { title: 'Challenge · You vs the AI', sub: 'Five random X-ray bags the model has never seen. Click where you think drugs are hidden, then see the live M1 heatmap and the ground truth.' },
     models: { title: 'AI Models · Live Test', sub: 'The trained models behind M1 and M2, their held-out test results, and buttons to test them on brand-new data right now – in this browser.' }
   };
   var BADGES = {
@@ -23,7 +24,8 @@
     hyper: [['algo', 'Spectral matching + unmixing · live'], ['sim', 'Camera spectra · simulated']],
     predict: [['sim', 'M4 predictions · simulated']],
     learn: [['sim', 'Federated round · illustration']],
-    models: [['live', 'Benchmarks run live in this browser']]
+    models: [['live', 'Benchmarks run live in this browser']],
+    challenge: [['live', 'M1 trained CNN · live'], ['algo', 'Fresh random bags every round']]
   };
 
   // ---------------- state ----------------
@@ -47,7 +49,8 @@
   };
 
   function fmtTime(d) { return d.toTimeString().slice(0, 8); }
-  function tick(sec) { S.clock = new Date(S.clock.getTime() + sec * 1000); $('#clock').textContent = 'Simulated · ' + fmtTime(S.clock); }
+  function fmtHM(d) { return d.toTimeString().slice(0, 5); }
+  function tick(sec) { S.clock = new Date(S.clock.getTime() + sec * 1000); $('#clock').innerHTML = 'DXB local time <b>' + fmtHM(S.clock) + '</b>'; }
   function lvl(score) { return score >= 60 ? 'high' : score >= 45 ? 'mid' : 'low'; }
   function decisionText(score) {
     return score >= 60 ? 'Open bag · secondary inspection' : score >= 45 ? 'Re-scan at second angle' : 'Clear';
@@ -84,9 +87,9 @@
       timeline: []
     };
     var t0 = new Date(S.clock.getTime() - 40 * 60000);
-    c.timeline.push({ t: fmtTime(t0), mod: 'M5', title: 'Pre-arrival score ' + o.preScore, text: o.preText, cls: o.preScore >= 45 ? 'danger' : '' });
-    c.timeline.push({ t: fmtTime(S.clock), mod: 'M1', title: o.m1.label + ' · score ' + o.m1.score, text: o.m1.text, cls: 'danger' });
-    c.timeline.push({ t: fmtTime(S.clock), mod: 'M5', title: 'Fused score ' + fuse(c).score + ' → ' + decisionText(fuse(c).score), text: 'Routed to inspection queue. Officer notified on tablet.', cls: '' });
+    c.timeline.push({ t: fmtHM(t0), mod: 'M5', title: 'Pre-arrival score ' + o.preScore, text: o.preText, cls: o.preScore >= 45 ? 'danger' : '' });
+    c.timeline.push({ t: fmtHM(S.clock), mod: 'M1', title: o.m1.label + ' · score ' + o.m1.score, text: o.m1.text, cls: 'danger' });
+    c.timeline.push({ t: fmtHM(S.clock), mod: 'M5', title: 'Fused score ' + fuse(c).score + ' → ' + decisionText(fuse(c).score), text: 'Routed to inspection queue. Officer notified on tablet.', cls: '' });
     S.cases.unshift(c);
     return c;
   }
@@ -95,7 +98,7 @@
   function current() { return caseById(S.currentCase) || S.cases[0]; }
   function addTimeline(c, mod, title, text, cls) {
     tick(20 + Math.floor(Math.random() * 40));
-    c.timeline.push({ t: fmtTime(S.clock), mod: mod, title: title, text: text, cls: cls || '', fresh: true });
+    c.timeline.push({ t: fmtHM(S.clock), mod: mod, title: title, text: text, cls: cls || '', fresh: true });
   }
 
   // ---------------- navigation ----------------
@@ -134,26 +137,120 @@
     }).join('');
   }
 
+  // ---------------- interactive UAE map ----------------
+  var FULL = { x: 0, y: 0, w: 600, h: 340 }, VIEW = { x: 0, y: 0, w: 600, h: 340 }, mapSel = null, mapRaf = null;
+  var SITE_STATS = { DXB: [61240, 214], SHJ: [18320, 41], POST: [39870, 162], DWC: [14410, 38], JEA: [9120, 57], KZP: [6480, 31], AUH: [34773, 69] };
+  var KIND = { airport: 'Airport · passenger & air cargo', port: 'Seaport · container gantry scanners', post: 'Postal & courier · parcel X-ray lines' };
+  function projectSites() { NL.sites.forEach(function (s) { var p = NL.MAP.project(s.lon, s.lat); s.x = p[0]; s.y = p[1]; }); }
   function renderMap() {
-    var svg = $('#map');
-    var land = 'M0,270 L120,250 L175,232 L240,205 L300,178 L360,150 L410,122 L450,98 L470,52 L492,60 L502,112 L524,150 L548,208 L536,252 L470,300 L330,330 L150,340 L0,340 Z';
-    var h = '<path class="land" d="' + land + '"/>' +
-      '<text class="sea-lbl" x="150" y="120">Arabian Gulf</text>' +
-      '<text class="sea-lbl" x="562" y="120" text-anchor="middle" transform="rotate(70 562 120)">Gulf of Oman</text>';
+    var svg = $('#map'), M = NL.MAP, P = M.project;
+    var lbl = function (txt, lon, lat, cls, extra) { var q = P(lon, lat); return '<text class="' + cls + '" x="' + q[0].toFixed(1) + '" y="' + q[1].toFixed(1) + '" text-anchor="middle"' + (extra || '') + '>' + txt + '</text>'; };
+    var h = '<rect class="sea" x="-600" y="-340" width="1800" height="1020"/>' +
+      M.neighbours.map(function (n) { return '<path class="nb" d="' + n.d + '"><title>' + esc(n.name) + '</title></path>'; }).join('') +
+      '<path class="land uae" d="' + M.uae + '"><title>United Arab Emirates</title></path>' +
+      lbl('Arabian Gulf', 53.0, 25.95, 'sea-lbl') + lbl('Gulf of Oman', 57.15, 24.75, 'sea-lbl') +
+      lbl('OMAN', 56.9, 23.1, 'cty-lbl') + lbl('SAUDI ARABIA', 51.6, 22.95, 'cty-lbl') + lbl('UNITED ARAB EMIRATES', 54.1, 23.55, 'cty-lbl uae-lbl');
     NL.sites.forEach(function (s) {
-      h += '<g class="site-g" data-site="' + s.id + '"><circle class="site" cx="' + s.x + '" cy="' + s.y + '" r="6"/>' +
+      h += '<g class="site-g" data-site="' + s.id + '" tabindex="0" role="button" aria-label="' + esc(s.name) + '"><title>' + esc(s.name) + ' – click for details</title>' +
+        '<circle class="site-hit" cx="' + s.x + '" cy="' + s.y + '" r="12"/><circle class="site-ring" cx="' + s.x + '" cy="' + s.y + '" r="9"/>' +
+        '<circle class="site" cx="' + s.x + '" cy="' + s.y + '" r="5"/>' +
         '<text class="site-lbl" x="' + (s.x + s.lx) + '" y="' + (s.y + s.ly) + '" text-anchor="' + s.anchor + '">' + esc(s.name) + '</text></g>';
     });
-    svg.innerHTML = h;
+    svg.innerHTML = h + '<g id="pulses"></g>';
+    applyView(VIEW);
+  }
+  function applyView(v) {
+    var svg = $('#map'), k = v.w / FULL.w;
+    svg.setAttribute('viewBox', v.x.toFixed(2) + ' ' + v.y.toFixed(2) + ' ' + v.w.toFixed(2) + ' ' + v.h.toFixed(2));
+    svg.style.setProperty('--k', k);
+    $$('#map .site-g').forEach(function (g) {
+      var s = NL.site(g.dataset.site), t = g.querySelector('text');
+      t.setAttribute('x', s.x + s.lx * k); t.setAttribute('y', s.y + s.ly * k);
+      t.style.fontSize = (11.5 * k).toFixed(2) + 'px';
+      t.style.strokeWidth = (3 * k).toFixed(2) + 'px';
+      g.querySelector('.site').setAttribute('r', 5 * k); g.querySelector('.site-ring').setAttribute('r', 9 * k); g.querySelector('.site-hit').setAttribute('r', 12 * k);
+    });
+    $$('#map .sea-lbl, #map .cty-lbl').forEach(function (t) { t.style.fontSize = ((t.classList.contains('cty-lbl') ? 10 : 12) * k).toFixed(2) + 'px'; });
+  }
+  function animateView(to, ms) {
+    if (mapRaf) cancelAnimationFrame(mapRaf);
+    var from = { x: VIEW.x, y: VIEW.y, w: VIEW.w, h: VIEW.h }, t0 = performance.now();
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    (function f(now) {
+      var p = reduce ? 1 : Math.min(1, (now - t0) / (ms || 650)), e = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+      ['x', 'y', 'w', 'h'].forEach(function (k) { VIEW[k] = from[k] + (to[k] - from[k]) * e; });
+      applyView(VIEW);
+      if (p < 1) mapRaf = requestAnimationFrame(f);
+    })(t0);
+  }
+  function selectSite(id) {
+    var s = NL.site(id);
+    if (!s) return;
+    mapSel = id;
+    $$('#map .site-g').forEach(function (g) { g.classList.toggle('sel', g.dataset.site === id); });
+    var w = 190, hgt = w * FULL.h / FULL.w;
+    animateView({ x: Math.max(-40, Math.min(FULL.w - w + 40, s.x - w * 0.28)), y: Math.max(-20, Math.min(FULL.h - hgt + 20, s.y - hgt / 2)), w: w, h: hgt });
+    renderSiteCard();
+  }
+  function renderSiteCard() {
+    var el = $('#siteCard'), s = NL.site(mapSel);
+    if (!s) { el.hidden = true; return; }
+    var st = SITE_STATS[s.id] || [0, 0];
+    var open = S.cases.filter(function (c) { return c.site === s.id && !/Cleared|confirmed/.test(c.status); });
+    var ev = S.events.find(function (e) { return e.site === s.id; });
+    el.innerHTML = '<div class="sc-h"><b>' + esc(s.name) + '</b><button class="sc-x" id="scClose" type="button" aria-label="Zoom out">&times;</button></div>' +
+      '<small>' + KIND[s.kind] + ' · ' + s.lat.toFixed(3) + '°N ' + s.lon.toFixed(3) + '°E</small>' +
+      '<div class="sc-stats"><div><small>Screened today</small><b>' + st[0].toLocaleString('en-US') + '</b></div><div><small>AI flags</small><b>' + st[1] + '</b></div><div><small>Open cases</small><b>' + open.length + '</b></div></div>' +
+      '<p class="sc-ev">' + (ev ? '<time>' + ev.t.slice(0, 5) + '</time> ' + esc(ev.text) : 'No events yet today.') + '</p>' +
+      (open.length ? '<div class="sc-open">' + open.slice(0, 3).map(function (c) { return '<button type="button" data-case="' + c.id + '">' + c.id + ' · ' + esc(c.tag) + ' <span class="pill ' + lvl(fuse(c).score) + '">' + fuse(c).score + '</span></button>'; }).join('') + '</div>' : '') +
+      '<div class="row"><button class="btn primary" id="scNew" type="button">Open new case here</button><button class="btn" id="scOut" type="button">Zoom out</button></div>';
+    el.hidden = false;
+    el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
+  }
+  function zoomOut() { mapSel = null; $$('#map .site-g').forEach(function (g) { g.classList.remove('sel'); }); $('#siteCard').hidden = true; animateView(FULL); }
+  function openCaseAtSite(id) {
+    var s = NL.site(id), r = Math.floor(Math.random() * 1e9), c;
+    if (s.kind === 'port') {
+      var routes = ['Furniture consignment · 40 ft', 'Auto parts · 20 ft', 'Foodstuffs · reefer 40 ft', 'Building materials · 40 ft'];
+      c = newCase({ tag: 'CGO-' + id + '-' + (10000 + r % 89999), kind: 'Container', site: id, lane: 'Gantry scanner ' + (1 + r % 3), route: routes[r % routes.length],
+        preScore: 30 + r % 25, preText: 'New consignee; routing via two transhipment ports (simulated indicators).',
+        m1: { score: 70 + r % 22, label: 'Organic fill in normally hollow cargo', text: 'Container scan shows uniform organic density inside panels / pallets that should be hollow (container model simulated).' } });
+    } else {
+      var sc = NL.randomScene(r, { positives: 1 }), off = document.createElement('canvas');
+      off.width = NL.XRAY.W; off.height = NL.XRAY.H; NL.renderScene(sc, off.getContext('2d'), null);
+      var res = NL.m1.run(off), parcel = s.kind === 'post';
+      c = newCase({ tag: (parcel ? 'PCL-' : 'BAG-') + id + '-' + (100000 + r % 899999), kind: parcel ? 'Parcel' : 'Bag', site: id,
+        lane: parcel ? 'Courier line ' + (1 + r % 4) : 'Lane ' + (1 + r % 8), route: parcel ? 'E-commerce parcel · declared "household goods"' : 'Arrival · generated live scan',
+        preScore: 20 + r % 35, preText: 'Route and booking indicators (simulated).',
+        m1: { score: res.score, label: m1Label(res), text: m1Text(res) + ' (live M1 model on a freshly generated scan)' } });
+      c.scene = sc;
+    }
+    S.stats.flags += 1;
+    log(id, 'AI flag · ' + c.tag + ' → case ' + c.id + ' (opened from map)', 'danger');
+    S.currentCase = c.id;
+    go('case');
+  }
+  function initMap() {
+    projectSites();
+    var svg = $('#map');
+    svg.addEventListener('click', function (e) { var g = e.target.closest('.site-g'); if (g) selectSite(g.dataset.site); });
+    svg.addEventListener('keydown', function (e) { var g = e.target.closest('.site-g'); if (g && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); selectSite(g.dataset.site); } });
+    $('#siteCard').addEventListener('click', function (e) {
+      if (e.target.closest('#scClose') || e.target.closest('#scOut')) zoomOut();
+      else if (e.target.closest('#scNew')) openCaseAtSite(mapSel);
+      else { var b = e.target.closest('[data-case]'); if (b) { S.currentCase = b.dataset.case; go('case'); } }
+    });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && mapSel && S.screen === 'dashboard') zoomOut(); });
   }
   function pulse(siteId, kind) {
-    var s = NL.site(siteId), svg = $('#map');
-    if (!s || !svg) return;
+    var s = NL.site(siteId), g = $('#pulses');
+    if (!s || !g) return;
     var c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    c.setAttribute('cx', s.x); c.setAttribute('cy', s.y); c.setAttribute('r', 6);
+    c.setAttribute('cx', s.x); c.setAttribute('cy', s.y); c.setAttribute('r', 6 * VIEW.w / FULL.w);
     c.setAttribute('class', 'pulse ' + kind);
-    svg.appendChild(c);
+    g.appendChild(c);
     setTimeout(function () { c.remove(); }, 1900);
+    if (mapSel === siteId && S.screen === 'dashboard') renderSiteCard();
   }
 
   function renderQueue() {
@@ -423,7 +520,7 @@
       '<div class="ids"><div><small>Case</small><b>' + c.id + '</b></div><div><small>' + c.kind + ' tag</small><b>' + esc(c.tag) + '</b></div>' +
       '<div><small>Site</small><b>' + esc(NL.site(c.site).name) + '</b></div><div><small>Lane</small><b>' + esc(c.lane) + '</b></div>' +
       '<div><small>Status</small><b>' + esc(c.status) + '</b></div></div>' +
-      '<label class="muted small">Switch case <select id="caseSelect">' + opts + '</select></label>';
+      '<label class="muted small case-switch">Switch case <span class="select-glass"><select id="caseSelect">' + opts + '</select></span></label>';
 
     var pend = [];
     if (!c.evidence.m2) pend.push('<li class="pending"><div class="t-top"><span class="t-mod">M2</span><span class="t-title">Package &amp; imprint check</span></div><p>Pending – officer photographs contents at the inspection desk</p></li>');
@@ -441,6 +538,7 @@
         return '<div class="bar-row' + (p.v == null ? ' pending' : '') + '"><div class="bar-lbl"><span>' + p.label + ' <small>· ' + p.sub + '</small></span><b>' + (p.v == null ? 'pending' : p.v) + '</b></div>' +
           '<div class="track"><i style="width:' + (p.v || 0) + '%"></i></div></div>';
       }).join('') + '</div>' +
+      whatIfHtml(f) +
       '<p class="muted small">Score = noisy-OR of independent evidence, each weighted by the module\'s validated precision. Threshold: ≥60 open, 45–59 re-scan, &lt;45 clear.</p>';
 
     var a = [];
@@ -454,6 +552,25 @@
       a.push('<button class="btn primary" data-act="tolearn">Go to learning loop &rarr;</button>');
     }
     $('#caseActions').innerHTML = a.join('');
+  }
+
+  // ----- what-if fusion explorer -----
+  function whatIfHtml(f) {
+    return '<details class="whatif" id="whatIf"' + (S.whatIfOpen ? ' open' : '') + '><summary>What-if: adjust the evidence and watch the decision change</summary>' +
+      f.parts.map(function (p) { return '<label class="wi-row"><span>' + p.label + '</span><input type="range" min="0" max="100" step="1" data-k="' + p.k + '" value="' + (p.v || 0) + '"><b data-out="' + p.k + '">' + (p.v || 0) + '</b></label>'; }).join('') +
+      '<div class="wi-result" id="wiResult"></div><button class="btn" type="button" id="wiReset">Reset to case</button></details>';
+  }
+  function updateWhatIf() {
+    var ev = {};
+    $$('#whatIf input[type=range]').forEach(function (r) { var v = +r.value; $('#whatIf [data-out="' + r.dataset.k + '"]').textContent = v; if (v > 0) ev[r.dataset.k] = { score: v }; });
+    var sc = fuse({ evidence: ev }).score, l = lvl(sc);
+    $('#wiResult').innerHTML = 'What-if fused score <b class="lvl-' + l + '">' + sc + '</b> <span class="pill ' + l + '">' + decisionText(sc) + '</span>';
+  }
+  function initWhatIf() {
+    var host = $('#fusion');
+    host.addEventListener('input', function (e) { if (e.target.matches('#whatIf input[type=range]')) updateWhatIf(); });
+    host.addEventListener('toggle', function (e) { if (e.target.id === 'whatIf') { S.whatIfOpen = e.target.open; if (e.target.open) updateWhatIf(); } }, true);
+    host.addEventListener('click', function (e) { if (e.target.id === 'wiReset') { renderCase(); var w = $('#whatIf'); if (w) { w.open = true; updateWhatIf(); } } });
   }
 
   function caseAction(act) {
@@ -492,7 +609,7 @@
     if (!cr.length) return null;
     var hits = cr.filter(function (c) { return c.res.top === 0; });
     var avg = hits.length ? hits.reduce(function (a, c) { return a + c.res.probs[0]; }, 0) / hits.length : 0;
-    return { n: cr.length, hits: hits.length, avg: avg, score: hits.length / cr.length >= 0.5 ? Math.round(avg * 95) : Math.round(hits.length / cr.length * 50) };
+    return { n: cr.length, hits: hits.length, avg: avg, score: hits.length ? Math.round(avg * (hits.length / cr.length >= 0.5 ? 95 : 85)) : 0 };
   }
   function deskScore() {
     var im = imprintSummary();
@@ -500,8 +617,8 @@
   }
   function deskSummary() {
     var s = NL.deskSamples[S.deskSample], im = imprintSummary(), parts = [];
-    if (im) parts.push(im.hits + '/' + im.n + ' tablets classified Captagon-style (avg ' + Math.round(im.avg * 100) + '%)');
-    if (!s.registry.ok) parts.push({ 'peptide-vial': 'unregistered injectable peptide', 'protein-tub': 'label not in registry', 'pill-strip': 'no registered medicine matches' }[S.deskSample]);
+    if (im) parts.push(im.hits + '/' + im.n + ' tablets classified Captagon-style (avg ' + Math.round(im.avg * 100) + '%)' + (S.profile ? ', ' + S.profile.dMean.toFixed(1) + ' mm' : ''));
+    if (!s.registry.ok && S.deskSample !== 'mixed-tray') parts.push({ 'peptide-vial': 'unregistered injectable peptide', 'protein-tub': 'label not in registry', 'pill-strip': 'no registered medicine matches' }[S.deskSample]);
     return parts.join(' + ');
   }
   function renderDesk() {
@@ -530,7 +647,7 @@
       '<div class="ocr"><div class="muted small"><span class="badge sim">Simulated</span> Packaging detection &amp; OCR</div>' + s.ocr.map(function (o) {
         return '<div><span class="lang">' + o.lang + '</span><span' + (o.rtl ? ' dir="rtl" lang="ar"' : '') + '>' + esc(o.text) + '</span></div>';
       }).join('') + '</div>' +
-      '<div class="registry ' + (s.registry.ok ? 'pass' : 'fail') + '">' + esc(s.registry.text) + '</div>';
+      '<div class="registry ' + (s.registry.ok ? 'pass' : 'fail') + '">' + esc(s.registry.text) + '</div>' + profileHtml();
   }
   function renderCrops() {
     var el = $('#crops');
@@ -547,10 +664,70 @@
       el.appendChild(d);
     });
   }
+  // ----- forensic physical profile: ruler-calibrated tablet measurements -----
+  function lumAt(d, W, x, y) { var i = (Math.round(y) * W + Math.round(x)) * 4; return 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]; }
+  function measureProfile(photo, s) {
+    if (!s.ruler || !s.tablets.length) return null;
+    var W = photo.width, d = photo.getContext('2d').getImageData(0, 0, W, photo.height).data, R = s.ruler;
+    // 1. calibrate from the scale bar: centres of dark tick marks along one row
+    var runs = [], inRun = false, st = 0, lo = 255, hi = 0;
+    for (var x0 = R.x0; x0 <= R.x1; x0++) { var lv = lumAt(d, W, x0, R.y); if (lv < lo) lo = lv; if (lv > hi) hi = lv; }
+    var thr = (lo + hi) / 2;
+    for (var x = R.x0; x <= R.x1; x++) {
+      var dark = lumAt(d, W, x, R.y) < thr;
+      if (dark && !inRun) { inRun = true; st = x; }
+      if (!dark && inRun) { inRun = false; runs.push((st + x - 1) / 2); }
+    }
+    var diffs = []; for (var i = 1; i < runs.length; i++) diffs.push(runs[i] - runs[i - 1]);
+    diffs.sort(function (a, b) { return a - b; });
+    var pxPerMm = diffs.length ? diffs[Math.floor(diffs.length / 2)] / R.mmPerTick : null;
+    if (!pxPerMm) return null;
+    // 2. each tablet: radial scan for the rim (darkest ring between 0.8r and 1.25r)
+    var dia = [], circ = [], cols = [];
+    s.tablets.forEach(function (t) {
+      var radii = [];
+      for (var k = 0; k < 24; k++) {
+        // half-maximum edge: where brightness falls halfway from the tablet face to the darkest point outside it
+        var ang = k / 24 * 2 * Math.PI, ca = Math.cos(ang), sa = Math.sin(ang), prof = [], lo2 = 1e9, br = t[2];
+        var face = lumAt(d, W, t[0] + ca * t[2] * 0.6, t[1] + sa * t[2] * 0.6);
+        for (var q = t[2] * 0.8; q <= t[2] * 1.25; q += 0.25) { var L = lumAt(d, W, t[0] + ca * q, t[1] + sa * q); prof.push([q, L]); if (L < lo2) lo2 = L; }
+        var half = (face + lo2) / 2;
+        for (var pi = 0; pi < prof.length; pi++) if (prof[pi][1] < half) { br = pi ? prof[pi - 1][0] + (prof[pi - 1][1] - half) / Math.max(1e-6, prof[pi - 1][1] - prof[pi][1]) * 0.25 : prof[pi][0]; break; }
+        radii.push(br);
+      }
+      var m = radii.reduce(function (a, b) { return a + b; }, 0) / radii.length;
+      var sd = Math.sqrt(radii.reduce(function (a, b) { return a + (b - m) * (b - m); }, 0) / radii.length);
+      dia.push(2 * m / pxPerMm); circ.push(1 - sd / m);
+      var rgb = [0, 0, 0];
+      [[0, -0.7], [0, 0.7]].forEach(function (o) { var j = (Math.round(t[1] + o[1] * t[2]) * W + Math.round(t[0] + o[0] * t[2])) * 4; rgb[0] += d[j] / 2; rgb[1] += d[j + 1] / 2; rgb[2] += d[j + 2] / 2; });
+      cols.push(rgb);
+    });
+    var mean = function (a) { return a.reduce(function (x, y) { return x + y; }, 0) / a.length; };
+    var dm = mean(dia), dsd = Math.sqrt(mean(dia.map(function (v) { return (v - dm) * (v - dm); })));
+    var c = [0, 1, 2].map(function (k) { return Math.round(mean(cols.map(function (v) { return v[k]; }))); });
+    return { n: dia.length, dMean: dm, dSd: dsd, circ: mean(circ), rgb: c, hex: '#' + c.map(function (v) { return ('0' + v.toString(16)).slice(-2); }).join(''), pxPerMm: pxPerMm, ticks: runs.length };
+  }
+  function profileHtml() {
+    var P = S.profile, im = imprintSummary();
+    if (!P) return '';
+    var logo = im && im.hits / im.n >= 0.5, round = P.circ > 0.95;
+    var match = logo && round && P.dMean >= 7.0 && P.dMean <= 8.5;
+    var row = function (k, v, badge) { return '<tr><th>' + k + '</th><td>' + v + '</td><td><span class="badge ' + badge[0] + '">' + badge[1] + '</span></td></tr>'; };
+    return '<div class="profile"><div class="muted small"><b>Forensic physical profile</b> · calibrated from the scale bar (' + P.ticks + ' ticks, ' + P.pxPerMm.toFixed(2) + ' px/mm)</div><table>' +
+      row('Count', P.n + ' tablets', ['algo', 'Live measurement']) +
+      row('Diameter', P.dMean.toFixed(1) + ' ± ' + P.dSd.toFixed(1) + ' mm', ['algo', 'Live measurement']) +
+      row('Shape', (round ? 'Round' : 'Irregular') + ' · circularity ' + P.circ.toFixed(2), ['algo', 'Live measurement']) +
+      row('Colour', '<i class="swatch" style="background:' + P.hex + '"></i>' + P.hex.toUpperCase() + ' · sRGB ' + P.rgb.join(', '), ['algo', 'Live measurement']) +
+      row('Logo / imprint', im ? (im.hits ? 'Twin crescents on ' + im.hits + ' of ' + im.n + ' tablets' : 'No Captagon-style logo') : '–', ['live', 'Live model']) +
+      row('Score line', im && S.crops.some(function (c) { return c.res.top === 2; }) ? 'Present' : 'None', ['live', 'Live model']) +
+      row('Thickness · weight', 'Not measurable from a top-down photo – use calipers and a balance', ['sim', 'Manual step']) +
+      '</table><div class="ref ' + (match || (im && im.hits) ? 'hit' : '') + '">' + (match ? '⚠ Consistent with the Captagon-style reference profile (illustrative): 7.0–8.5 mm, round, off-white, twin-crescent logo.' : im && im.hits ? '⚠ ' + im.hits + ' of ' + im.n + ' tablets carry the Captagon-style logo – separate them for lab testing.' : 'Does not match the Captagon-style reference profile.') + '</div></div>';
+  }
   function analyseDesk() {
     $('#deskResult').innerHTML = '<div class="placeholder"><span class="spinner"></span>Classifying tablet imprints with the M2 model&hellip;</div>';
     var s = NL.deskSamples[S.deskSample];
     return NL.rasterPhoto(s).then(function (photo) {
+      S.profile = measureProfile(photo, s);
       S.crops = s.tablets.map(function (t) {
         var side = t[2] * 2.6, x = t[0] - side / 2, y = t[1] - side / 2;
         var cc = document.createElement('canvas'); cc.width = 48; cc.height = 48;
@@ -831,6 +1008,74 @@
     });
   }
 
+  // ---------------- challenge: you vs the AI ----------------
+  var CH = null;
+  function chStart() {
+    CH = { round: 0, you: 0, ai: 0, results: [], base: Math.floor(Math.random() * 1e8) + 3e7 };
+    chRound();
+  }
+  function chRound() {
+    var r = NL.rng(CH.base + CH.round * 101);
+    CH.answered = false;
+    CH.scene = NL.randomScene(CH.base + CH.round, { positives: r() < 0.6 ? 1 + (r() < 0.25 ? 1 : 0) : 0 });
+    CH.off = document.createElement('canvas'); CH.off.width = NL.XRAY.W; CH.off.height = NL.XRAY.H;
+    CH.mask = document.createElement('canvas'); CH.mask.width = NL.XRAY.W; CH.mask.height = NL.XRAY.H;
+    NL.renderScene(CH.scene, CH.off.getContext('2d'), CH.mask.getContext('2d'));
+    var cv = $('#chCanvas'); cv.getContext('2d').drawImage(CH.off, 0, 0);
+    cv.classList.add('aim');
+    $('#chRound').textContent = 'Round ' + (CH.round + 1) + ' of 5';
+    $('#chHint').innerHTML = 'Click where you think drugs are hidden &ndash; or press &ldquo;Looks clean&rdquo;.';
+    $('#chClean').hidden = false; $('#chNext').hidden = true;
+    chBoard();
+  }
+  function chAnswer(pt) {
+    if (!CH || CH.answered || CH.round >= 5) return;
+    CH.answered = true;
+    var truth = NL.sceneHasConcealment(CH.scene), res = NL.m1.run(CH.off), aiFlag = res.score >= 50;
+    var hit = false;
+    if (pt) { var md = CH.mask.getContext('2d').getImageData(Math.round(pt.x), Math.round(pt.y), 1, 1).data; hit = md[0] > 127; }
+    var youOk = pt ? (truth && hit) : !truth, aiOk = aiFlag === truth;
+    if (youOk) CH.you++; if (aiOk) CH.ai++;
+    CH.results.push({ truth: truth, youOk: youOk, aiOk: aiOk, ai: res.score, ms: res.ms, clicked: !!pt });
+    var cv = $('#chCanvas'), ctx = cv.getContext('2d');
+    cv.classList.remove('aim');
+    ctx.drawImage(CH.off, 0, 0); NL.drawTruth(ctx, CH.mask); NL.drawOverlay(ctx, res);
+    if (pt) {
+      ctx.strokeStyle = youOk ? '#22c55e' : '#f59e0b'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(pt.x, pt.y, 16, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(pt.x - 24, pt.y); ctx.lineTo(pt.x + 24, pt.y); ctx.moveTo(pt.x, pt.y - 24); ctx.lineTo(pt.x, pt.y + 24); ctx.stroke();
+    }
+    $('#chHint').innerHTML = (truth ? 'Drugs were hidden (blue = ground truth).' : 'This bag was clean.') + ' You: <b class="' + (youOk ? 'lvl-low' : 'lvl-high') + '">' + (youOk ? '✓' : '✗') + '</b> · AI (' + res.score + '/100): <b class="' + (aiOk ? 'lvl-low' : 'lvl-high') + '">' + (aiOk ? '✓' : '✗') + '</b>';
+    CH.round++;
+    $('#chClean').hidden = true;
+    $('#chNext').hidden = false; $('#chNext').innerHTML = CH.round >= 5 ? 'See final score' : 'Next bag &rarr;';
+    chBoard();
+  }
+  function chBoard() {
+    var done = CH.round >= 5 && CH.answered, avg = CH.results.length ? CH.results.reduce(function (a, r) { return a + r.ms; }, 0) / CH.results.length : 0;
+    $('#chBoard').innerHTML =
+      '<div class="result-h"><h3>Scoreboard</h3><span class="badge live">Live model</span></div>' +
+      '<div class="vs"><div><small>You</small><b>' + CH.you + '</b></div><span>vs</span><div><small>AI (M1)</small><b>' + CH.ai + '</b></div></div>' +
+      '<ol class="ch-list">' + [0, 1, 2, 3, 4].map(function (i) {
+        var r = CH.results[i];
+        return '<li class="' + (r ? '' : 'todo') + '"><span>Bag ' + (i + 1) + (r ? ' · ' + (r.truth ? 'drugs hidden' : 'clean') : '') + '</span>' +
+          (r ? '<span>You ' + (r.youOk ? '✓' : '✗') + ' · AI ' + (r.aiOk ? '✓' : '✗') + ' <small>(' + r.ai + ')</small></span>' : '<span class="muted">–</span>') + '</li>';
+      }).join('') + '</ol>' +
+      (done ? '<div class="decision ' + (CH.ai >= CH.you ? 'low' : 'mid') + '"><span>Final: you ' + CH.you + '/5 · AI ' + CH.ai + '/5 · AI took ' + avg.toFixed(0) + ' ms per bag</span><button class="btn primary" type="button" id="chAgain">Play again</button></div>' :
+        '<p class="muted small">You score when you click inside a hidden concealment, or say &ldquo;Looks clean&rdquo; on a clean bag. The AI scores when its flag (≥ 50) matches the truth. Every bag is generated fresh, so neither of you has seen it before.</p>');
+  }
+  function renderChallenge() { if (!CH) chStart(); else { chBoard(); } }
+  function initChallenge() {
+    var cv = $('#chCanvas');
+    cv.addEventListener('click', function (e) { var r = cv.getBoundingClientRect(); chAnswer({ x: (e.clientX - r.left) / r.width * NL.XRAY.W, y: (e.clientY - r.top) / r.height * NL.XRAY.H }); });
+    $('#chClean').addEventListener('click', function () { chAnswer(null); });
+    $('#chNext').addEventListener('click', function () { if (CH.round >= 5) { CH.answered = true; chBoard(); $('#chNext').hidden = true; $('#chHint').textContent = 'Game over – see the scoreboard.'; } else chRound(); });
+    $('#chRestart').addEventListener('click', chStart);
+    // automated-test helper: centre of the first hidden concealment in the current bag (null if clean)
+    NL._chScene = function () { if (!CH || !CH.scene) return null; var it = CH.scene.items.find(function (i) { return NL.xrayItems[i.type].positive; }); return it ? { x: it.x, y: it.y } : null; };
+    $('#chBoard').addEventListener('click', function (e) { if (e.target.id === 'chAgain') chStart(); });
+  }
+
   // ---------------- AI models: model cards + live benchmarks ----------------
   function pct(v) { return (v * 100).toFixed(1) + '%'; }
   function renderModels() {
@@ -968,14 +1213,14 @@
     }, 700);
   }
   function signOut() {
-    if (S.demo) S.demo.stop = true;
+    stopDemo();
     if (S.autoBelt) toggleAuto();
     try { sessionStorage.removeItem(AUTH_KEY); } catch (e) { }
     log('DXB', NL.officer.short + ' signed out', 'info');
     showLogin();
   }
 
-  var RENDER = { dashboard: renderDashboard, lane: renderLane, 'case': renderCase, desk: renderDesk, hyper: renderHyper, predict: renderPredict, learn: renderLearn, models: renderModels };
+  var RENDER = { dashboard: renderDashboard, lane: renderLane, 'case': renderCase, desk: renderDesk, hyper: renderHyper, predict: renderPredict, learn: renderLearn, models: renderModels, challenge: renderChallenge };
 
   // ---------------- demo runner ----------------
   function narrate(n, total, text) {
@@ -983,17 +1228,46 @@
     $('#narrStep').textContent = n + ' / ' + total;
     $('#narrText').textContent = text;
   }
+  function endDemoUI() {
+    $('#narration').hidden = true;
+    $('#demoBtn').innerHTML = '&#9654; Run full demo';
+    $('#demoChip').hidden = true; $('#clock').hidden = false;
+    clearInterval(S.demoTimer);
+  }
+  function stopDemo() {
+    var t = S.demo;
+    if (!t) return;
+    t.stop = true;
+    t.cancels.splice(0).forEach(function (f) { f(); });
+    S.demo = null;
+    endDemoUI();
+  }
   function runDemo() {
-    if (S.demo) { S.demo.stop = true; return; }
-    var token = S.demo = { stop: false };
+    if (S.demo) { stopDemo(); return; }
+    var token = S.demo = { stop: false, cancels: [], t0: performance.now(), n: 0 };
     $('#demoBtn').innerHTML = '&#9632; Stop demo';
+    $('#clock').hidden = true; $('#demoChip').hidden = false;
+    var upd = function () {
+      var sec = Math.floor((performance.now() - token.t0) / 1000);
+      $('#demoTime').textContent = Math.floor(sec / 60) + ':' + ('0' + sec % 60).slice(-2);
+      $('#demoStep').textContent = 'Step ' + Math.max(1, token.n) + ' of 8';
+      $('#demoBar').style.width = (token.n / 8 * 100) + '%';
+    };
+    upd(); clearInterval(S.demoTimer); S.demoTimer = setInterval(upd, 250);
     if (S.autoBelt) toggleAuto();
     var bagI = NL.bags.findIndex(function (b) { return b.demo; });
     var TOTAL = 8;
-    function wait(ms) { return sleep(ms).then(function () { if (token.stop) throw new Error('stopped'); }); }
+    function wait(ms) {
+      return new Promise(function (res, rej) {
+        if (token.stop) return rej(new Error('stopped'));
+        var id = setTimeout(function () { token.stop ? rej(new Error('stopped')) : res(); }, ms);
+        token.cancels.push(function () { clearTimeout(id); rej(new Error('stopped')); });
+      });
+    }
     function step(n, text, fn, ms) {
       return function () {
         if (token.stop) throw new Error('stopped');
+        token.n = n;
         narrate(n, TOTAL, text);
         return Promise.resolve(fn && fn()).then(function () { return wait(ms); });
       };
@@ -1018,11 +1292,7 @@
       }, 2400))
       .then(step(8, 'Back to the command view: one seizure at DXB improved detection at all seven UAE entry points.', function () { go('dashboard'); }, 4500))
       .catch(function () { })
-      .then(function () {
-        S.demo = null;
-        $('#narration').hidden = true;
-        $('#demoBtn').innerHTML = '&#9654; Run full demo';
-      });
+      .then(function () { if (S.demo === token) { S.demo = null; endDemoUI(); } });
   }
 
   // ---------------- background activity ----------------
@@ -1061,6 +1331,7 @@
     NL.seedCases.forEach(function (o) { newCase(o); });
     S.cases.forEach(function (c) { c.timeline.forEach(function (t) { t.fresh = false; }); });
     S.currentCase = S.cases[0].id;
+    initMap();
     renderMap();
     tick(0);
     log('POST', 'AI flag · PCL-POST-55120 · organic sheets (score ' + fuse(caseById('C-24117')).score + ') → case C-24117', 'danger');
@@ -1079,6 +1350,8 @@
     $('#laneModes').addEventListener('click', function (e) { var b = e.target.closest('[data-mode]'); if (b) setLaneMode(b.dataset.mode); });
     initBuilder();
     initPad();
+    initWhatIf();
+    initChallenge();
     $('#caseHead').addEventListener('change', function (e) { if (e.target.id === 'caseSelect') { S.currentCase = e.target.value; renderCase(); } });
     $('#caseActions').addEventListener('click', function (e) { var b = e.target.closest('[data-act]'); if (b) caseAction(b.dataset.act); });
     $('#samplePick').addEventListener('click', function (e) { var b = e.target.closest('[data-sample]'); if (b) { S.deskSample = b.dataset.sample; S.deskAnalysed = false; renderDesk(); } });
