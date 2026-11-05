@@ -17,6 +17,10 @@
     'Learning Loop': 'حلقة التعلّم',
     'AI Models · live test': 'نماذج الذكاء الاصطناعي · اختبار مباشر',
     'Challenge · You vs AI': 'التحدي · أنت ضد الذكاء الاصطناعي',
+    'Network analytics': 'تحليلات الشبكة',
+    'Network Analytics · Linked Cases': 'تحليلات الشبكة · القضايا المترابطة',
+    'Cases linked by sender, route pattern and concealment method. Clusters across entry points reveal smuggling networks, not just single bags.': 'قضايا مترابطة حسب المرسل ونمط المسار وأسلوب الإخفاء. تكشف المجموعات عبر المنافذ شبكات التهريب، لا الحقائب المنفردة فقط.',
+    'Link analysis · live algorithm': 'تحليل الروابط · خوارزمية مباشرة', 'Historical cases · simulated': 'قضايا سابقة · محاكاة',
     // screen titles
     'Live Lane · M1 X-ray Vision': 'المسار المباشر · M1 الرؤية بالأشعة السينية',
     'Inspection Case · M5 Risk Fusion': 'قضية التفتيش · M5 دمج المخاطر',

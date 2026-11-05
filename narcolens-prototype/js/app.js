@@ -13,6 +13,7 @@
     hyper: { title: 'Hyperspectral ID · M3 Substance Identification', sub: 'A hyperspectral camera sees chemistry through packaging. AI matches every pixel\'s spectrum to the drug library – without opening the pouch.' },
     predict: { title: 'Novel-Drug Predictor · M4', sub: 'Predicts the spectral fingerprint of new synthetic-drug variants before they are ever seized, and pushes them into the M3 library.' },
     learn: { title: 'Learning Loop · Federated Retraining', sub: 'Every confirmed seizure makes every site smarter. Models train locally; only model updates – never raw images – leave a site.' },
+    network: { title: 'Network Analytics · Linked Cases', sub: 'Cases linked by sender, route pattern and concealment method. Clusters across entry points reveal smuggling networks, not just single bags.' },
     challenge: { title: 'Challenge · You vs the AI', sub: 'Five random X-ray bags the model has never seen. Click where you think drugs are hidden, then see the live M1 heatmap and the ground truth.' },
     models: { title: 'AI Models · Live Test', sub: 'The trained models behind M1 and M2, their held-out test results, and buttons to test them on brand-new data right now – in this browser.' }
   };
@@ -25,7 +26,8 @@
     predict: [['sim', 'M4 predictions · simulated']],
     learn: [['sim', 'Federated round · illustration']],
     models: [['live', 'Benchmarks run live in this browser']],
-    challenge: [['live', 'M1 trained CNN · live'], ['algo', 'Fresh random bags every round']]
+    challenge: [['live', 'M1 trained CNN · live'], ['algo', 'Fresh random bags every round']],
+    network: [['algo', 'Link analysis · live algorithm'], ['sim', 'Historical cases · simulated']]
   };
 
   // ---------------- state ----------------
@@ -271,7 +273,7 @@
       return '<li><time>' + e.t + '</time><span class="site-tag">' + e.site + '</span><span class="lvl-' + e.level + '">' + esc(e.text) + '</span></li>';
     }).join('');
   }
-  function renderDashboard() { renderKpis(); renderQueue(); renderLog(); }
+  function renderDashboard() { renderKpis(); renderQueue(); renderLog(); var t = $('#netTip'); if (t && NL.netTopInsight) t.innerHTML = NL.netTopInsight(); }
 
   // ---------------- M1 lane ----------------
   S.laneMode = 'belt';
@@ -526,6 +528,7 @@
       '<div class="ids"><div><small>Case</small><b>' + c.id + '</b></div><div><small>' + c.kind + ' tag</small><b>' + esc(c.tag) + '</b></div>' +
       '<div><small>Site</small><b>' + esc(NL.site(c.site).name) + '</b></div><div><small>Lane</small><b>' + esc(c.lane) + '</b></div>' +
       '<div><small>Status</small><b>' + esc(c.status) + '</b></div></div>' +
+      (NL.netChip ? NL.netChip(c.id) : '') +
       '<label class="muted small case-switch">Switch case <span class="select-glass"><select id="caseSelect">' + opts + '</select></span></label>';
 
     var pend = [];
@@ -663,7 +666,7 @@
     S.crops.forEach(function (c) {
       var d = document.createElement('div'), cls = NL.IMPRINT_CLASSES[c.res.top];
       d.className = 'crop' + (cls.risk ? ' risk' : '');
-      var cv = document.createElement('canvas'); cv.width = 48; cv.height = 48;
+      var cv = document.createElement('canvas'); cv.width = 160; cv.height = 160;
       cv.getContext('2d').drawImage(c.canvas, 0, 0);
       d.appendChild(cv);
       d.insertAdjacentHTML('beforeend', '<b>' + (cls.risk ? 'Twin-crescent' : cls.id === 'plain' ? 'Plain' : cls.id === 'scored' ? 'Score line' : 'Letter stamp') + '</b>' + Math.round(c.res.probs[c.res.top] * 100) + '%');
@@ -732,12 +735,16 @@
   function analyseDesk() {
     $('#deskResult').innerHTML = '<div class="placeholder"><span class="spinner"></span>Classifying tablet imprints with the M2 model&hellip;</div>';
     var s = NL.deskSamples[S.deskSample];
-    return NL.rasterPhoto(s).then(function (photo) {
+    var HI = 4;
+    return Promise.all([NL.rasterPhoto(s), NL.rasterPhoto(s, HI)]).then(function (pair) {
+      var photo = pair[0], hi = pair[1];
       S.profile = measureProfile(photo, s);
       S.crops = s.tablets.map(function (t) {
         var side = t[2] * 2.6, x = t[0] - side / 2, y = t[1] - side / 2;
-        var cc = document.createElement('canvas'); cc.width = 48; cc.height = 48;
-        cc.getContext('2d').drawImage(photo, x, y, side, side, 0, 0, 48, 48);
+        // sharp thumbnail for people (from the 4x render); the model still sees its usual 48x48 input
+        var cc = document.createElement('canvas'); cc.width = 160; cc.height = 160;
+        var cx = cc.getContext('2d'); cx.imageSmoothingQuality = 'high';
+        cx.drawImage(hi, x * HI, y * HI, side * HI, side * HI, 0, 0, 160, 160);
         return { canvas: cc, res: NL.m2.run(photo, x, y, side, side) };
       });
       return new Promise(function (r) { setTimeout(r, 350); });
@@ -1251,7 +1258,7 @@
     showLogin();
   }
 
-  var RENDER = { dashboard: renderDashboard, lane: renderLane, 'case': renderCase, desk: renderDesk, hyper: renderHyper, predict: renderPredict, learn: renderLearn, models: renderModels, challenge: renderChallenge };
+  var RENDER = { dashboard: renderDashboard, lane: renderLane, 'case': renderCase, desk: renderDesk, hyper: renderHyper, predict: renderPredict, learn: renderLearn, models: renderModels, challenge: renderChallenge, network: function () { NL.netRender(); NL.netAfterRender(); } };
 
   // ---------------- demo runner ----------------
   function narrate(n, total, text) {

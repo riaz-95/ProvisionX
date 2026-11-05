@@ -29,6 +29,7 @@ A federated learning loop retrains every site after each lab-confirmed seizure. 
 2. Press **▶ Run full demo** (top right). It plays one bag end to end in about 60 seconds, with captions: X-ray flag → case → officer photo → hyperspectral ID → seizure → federated retraining.
 3. Or explore each screen from the left menu:
    - **Command Dashboard:** click any entry point on the UAE map. It zooms in and shows site stats. *Open new case here* runs the live model on a fresh scan and opens the case.
+   - **Network analytics:** a link graph of cases tied together by sender, route pattern and concealment method, with auto-generated insights such as "4 parcels from the same sender across 2 sites". Click an insight to spotlight that cluster. New cases flagged today join the graph live.
    - **Live Lane (M1):** the live model scans each belt bag, including 4 *tricky* bags. Tick *Ground truth* to check the AI's answer.
      - **Build your own bag:** add items, hide drugs, drag things around, then press *Scan with AI*.
      - **Upload a scan:** run the model on any image.
@@ -51,5 +52,6 @@ js/data.js            simulated bags, sites, spectral library
 js/xray.js            M1 X-ray renderer and AI overlay
 js/pills.js           M2 officer photos and recognition results
 js/hyperspectral.js   M3 hyperspectral cube and spectral matching
+js/network.js         network analytics (link graph, clusters, insights)
 js/app.js             cases, fusion, screens, demo runner
 ```

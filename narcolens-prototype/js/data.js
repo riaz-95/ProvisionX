@@ -143,3 +143,33 @@ window.NL.officer = {
   org: 'Ministry of Health and Prevention (MOHAP) · Drug Control Dept',
   post: 'DXB Terminal 3 · Inspection Desk 2'
 };
+
+/* Simulated case history (last 60 days) for network analytics. Identifiers are pseudonymous:
+   senders / consignees are account IDs, never names or nationalities. Passenger bags have no sender. */
+window.NL.history = [
+  { id: 'H-23971', kind: 'Parcel', site: 'POST', days: 9, sender: 'SND-4471', route: 'P-03', method: 'soaked-paper', outcome: 'seized' },
+  { id: 'H-23988', kind: 'Parcel', site: 'SHJ', days: 5, sender: 'SND-4471', route: 'P-03', method: 'soaked-paper', outcome: 'seized' },
+  { id: 'H-24002', kind: 'Parcel', site: 'POST', days: 2, sender: 'SND-4471', route: 'P-07', method: 'soaked-paper', outcome: 'flagged' },
+  { id: 'H-23810', kind: 'Bag', site: 'DXB', days: 28, route: 'R-17', method: 'lining', outcome: 'seized' },
+  { id: 'H-23902', kind: 'Bag', site: 'AUH', days: 14, route: 'R-17', method: 'lining', outcome: 'seized' },
+  { id: 'H-23950', kind: 'Bag', site: 'DXB', days: 8, route: 'R-17', method: 'false-bottom', outcome: 'flagged' },
+  { id: 'H-24010', kind: 'Bag', site: 'AUH', days: 1, route: 'R-17', method: 'buttons', outcome: 'cleared' },
+  { id: 'H-23940', kind: 'Bag', site: 'DWC', days: 12, route: 'R-09', method: 'protein-tub', outcome: 'seized' },
+  { id: 'H-23975', kind: 'Bag', site: 'AUH', days: 7, route: 'R-22', method: 'protein-tub', outcome: 'seized' },
+  { id: 'H-23991', kind: 'Parcel', site: 'POST', days: 4, sender: 'SND-5120', route: 'P-07', method: 'protein-tub', outcome: 'flagged' },
+  { id: 'H-23870', kind: 'Container', site: 'KZP', days: 21, sender: 'CNS-2290', route: 'S-04', method: 'door-panels', outcome: 'seized' },
+  { id: 'H-23930', kind: 'Container', site: 'JEA', days: 10, sender: 'CNS-2290', route: 'S-04', method: 'door-panels', outcome: 'flagged' },
+  { id: 'H-23720', kind: 'Bag', site: 'DXB', days: 45, route: 'R-22', method: 'buttons', outcome: 'seized' },
+  { id: 'H-23995', kind: 'Bag', site: 'DXB', days: 3, route: 'R-22', method: 'buttons', outcome: 'flagged' },
+  { id: 'H-23760', kind: 'Parcel', site: 'SHJ', days: 38, sender: 'SND-3318', route: 'P-11', method: 'vials', outcome: 'seized' },
+  { id: 'H-23998', kind: 'Parcel', site: 'POST', days: 3, sender: 'SND-3318', route: 'P-11', method: 'vials', outcome: 'flagged' },
+  { id: 'H-23880', kind: 'Bag', site: 'DWC', days: 19, route: 'R-31', method: 'shoe-soles', outcome: 'cleared' },
+  { id: 'H-23905', kind: 'Parcel', site: 'SHJ', days: 13, sender: 'SND-6002', route: 'P-15', method: 'packet', outcome: 'cleared' },
+  { id: 'H-23960', kind: 'Bag', site: 'AUH', days: 6, route: 'R-40', method: 'shoe-soles', outcome: 'flagged' },
+  { id: 'H-23850', kind: 'Container', site: 'JEA', days: 24, sender: 'CNS-7781', route: 'S-09', method: 'packet', outcome: 'cleared' }
+];
+/* Link attributes for the two cases already open at start-up. */
+window.NL.seedLinks = {
+  'PCL-POST-55120': { sender: 'SND-4471', route: 'P-07', method: 'soaked-paper' },
+  'CGO-JEA-30988': { sender: 'CNS-2290', route: 'S-04', method: 'door-panels' }
+};

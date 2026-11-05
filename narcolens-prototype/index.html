@@ -47,6 +47,7 @@
         <a href="#dashboard" data-screen="dashboard"><span class="num">01</span><span>Command Dashboard</span></a>
         <a href="#lane" data-screen="lane"><span class="num">M1</span><span>Live Lane &middot; X-ray Vision</span></a>
         <a href="#case" data-screen="case"><span class="num">M5</span><span>Inspection Case &middot; Fusion</span></a>
+        <a href="#network" data-screen="network"><span class="num">NET</span><span>Network analytics</span></a>
         <a href="#desk" data-screen="desk"><span class="num">M2</span><span>Inspection Desk &middot; Pills &amp; Labels</span></a>
         <a href="#hyper" data-screen="hyper"><span class="num">M3</span><span>Hyperspectral ID</span></a>
         <a href="#predict" data-screen="predict"><span class="num">M4</span><span>Novel-Drug Predictor</span></a>
@@ -93,6 +94,7 @@
             <div class="card">
               <div class="card-h"><h3>Live event log</h3></div>
               <ul class="log" id="log"></ul>
+              <div id="netTip"></div>
             </div>
           </div>
         </div>
@@ -172,6 +174,20 @@
             <div class="actions-row" id="caseActions"></div>
             <p class="fair">&#9878; Risk factors use bag, route, booking-timing and sensor evidence only. Nationality, ethnicity, religion and gender are never model inputs. The officer makes every decision; the lab result is the legal proof.</p>
           </div>
+        </div>
+      </section>
+
+      <!-- NETWORK ANALYTICS -->
+      <section class="screen" id="screen-network" hidden data-noi18n>
+        <div class="kpis three" id="netKpis"></div>
+        <div class="grid-lane">
+          <div class="card net-card">
+            <div class="net-toolbar" id="netToolbar"></div>
+            <div class="net-wrap"><svg id="netSvg" viewBox="0 0 760 460" role="img" aria-label="Case link graph"></svg></div>
+            <div class="net-legend" id="netLegend"></div>
+            <div class="net-detail" id="netDetail"></div>
+          </div>
+          <div class="card" id="netInsights"></div>
         </div>
       </section>
 
@@ -334,6 +350,7 @@
   <script src="js/pills.js"></script>
   <script src="js/hyperspectral.js"></script>
   <script src="js/i18n.js"></script>
+  <script src="js/network.js"></script>
   <script src="js/app.js"></script>
   <script src="js/extras.js"></script>
 </body>

@@ -48,6 +48,7 @@
     ['L', 'Switch Arabic / English', 'التبديل بين العربية والإنجليزية'],
     ['M', 'Mute / unmute alert sounds', 'كتم / تشغيل صوت التنبيهات'],
     ['1 – 9', 'Jump to a screen in the menu', 'الانتقال إلى شاشة في القائمة'],
+    ['0', 'Open network analytics', 'فتح تحليلات الشبكة'],
     ['?', 'Show this help', 'عرض هذه المساعدة'],
     ['Esc', 'Close panels, tour or help', 'إغلاق اللوحات أو الجولة أو المساعدة']
   ];
@@ -73,6 +74,7 @@
     else if (k === 't') { e.preventDefault(); startTour(); }
     else if (k === 'l') { e.preventDefault(); NL.i18n.set(NL.i18n.lang === 'ar' ? 'en' : 'ar'); }
     else if (k === 'm') { e.preventDefault(); setSound(!SND.on); if (SND.on) NL.cue('clear'); }
+    else if (k === '0') { e.preventDefault(); A.go('network'); }
     else if (/^[1-9]$/.test(k)) {
       var links = document.querySelectorAll('#nav a'), a = links[+k - 1];
       if (a) { e.preventDefault(); A.go(a.dataset.screen); }

@@ -4,8 +4,8 @@
 
   function tablet(cx, cy, r, fill) {
     return '<g><circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="' + (fill || '#ece4d2') + '" stroke="#b9ae96" stroke-width="1.5"/>' +
-      '<path d="M' + (cx - 0.12 * r) + ' ' + (cy - 0.5 * r) + ' Q' + (cx - 0.8 * r) + ' ' + cy + ' ' + (cx - 0.12 * r) + ' ' + (cy + 0.5 * r) + '" fill="none" stroke="#8a7f6a" stroke-width="' + Math.max(1.2, r / 7) + '" stroke-linecap="round"/>' +
-      '<path d="M' + (cx + 0.12 * r) + ' ' + (cy - 0.5 * r) + ' Q' + (cx + 0.8 * r) + ' ' + cy + ' ' + (cx + 0.12 * r) + ' ' + (cy + 0.5 * r) + '" fill="none" stroke="#8a7f6a" stroke-width="' + Math.max(1.2, r / 7) + '" stroke-linecap="round"/></g>';
+      '<path d="M' + (cx - 0.12 * r) + ' ' + (cy - 0.5 * r) + ' Q' + (cx - 0.8 * r) + ' ' + cy + ' ' + (cx - 0.12 * r) + ' ' + (cy + 0.5 * r) + '" fill="none" stroke="#6b604b" stroke-width="' + Math.max(1.5, r / 6) + '" stroke-linecap="round"/>' +
+      '<path d="M' + (cx + 0.12 * r) + ' ' + (cy - 0.5 * r) + ' Q' + (cx + 0.8 * r) + ' ' + cy + ' ' + (cx + 0.12 * r) + ' ' + (cy + 0.5 * r) + '" fill="none" stroke="#6b604b" stroke-width="' + Math.max(1.5, r / 6) + '" stroke-linecap="round"/></g>';
   }
   function det(x, y, w, h, label, n) {
     return '<g class="det"><rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" fill="rgba(239,68,68,0.10)" stroke="#ef4444" stroke-width="2.5" stroke-dasharray="7 4" rx="4"/>' +
@@ -234,13 +234,16 @@
   // Scale bars (for ruler calibration): scan row y, x-range, mm between ticks
   NL.deskSamples['protein-tub'].ruler = { y: 306, x0: 293, x1: 480, mmPerTick: 5 };
   NL.deskSamples['pill-strip'].ruler = { y: 302, x0: 53, x1: 462, mmPerTick: 1 };
-  NL.rasterPhoto = function (sample) {
+  // scale > 1 renders a sharper copy (used for the on-screen tablet thumbnails)
+  NL.rasterPhoto = function (sample, scale) {
+    scale = scale || 1;
     return new Promise(function (resolve, reject) {
       var svg = sample.svg().replace(/<g class="det">[\s\S]*?<\/g>/g, '');
       var img = new Image();
       img.onload = function () {
-        var c = document.createElement('canvas'); c.width = 520; c.height = 340;
-        c.getContext('2d').drawImage(img, 0, 0, 520, 340);
+        var c = document.createElement('canvas'); c.width = 520 * scale; c.height = 340 * scale;
+        var ctx = c.getContext('2d'); ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, 520 * scale, 340 * scale);
         resolve(c);
       };
       img.onerror = reject;
