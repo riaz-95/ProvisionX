@@ -783,3 +783,78 @@ body.locked { overflow: hidden; }
 .info-pop { background: color-mix(in srgb, var(--panel) 94%, transparent); }
 .info-pop .steps li { display: block; position: relative; padding: 6px 0 6px 32px; line-height: 1.45; }
 .info-pop .steps li::before { position: absolute; left: 0; top: 6px; }
+
+
+/* ======================= v7: alerts, tour, shortcuts, Arabic / RTL ======================= */
+.xray-wrap.flash-flag { animation: flashFlag .9s ease; }
+.xray-wrap.flash-ok { animation: flashOk .6s ease; }
+@keyframes flashFlag { 0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } 20%, 60% { box-shadow: 0 0 0 4px rgba(239, 68, 68, .85), 0 0 28px rgba(239, 68, 68, .55); } 40% { box-shadow: 0 0 0 2px rgba(239, 68, 68, .4); } }
+@keyframes flashOk { 30% { box-shadow: 0 0 0 3px rgba(34, 197, 94, .6); } 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); } }
+#soundBtn .mute { display: none; }
+#soundBtn.muted-snd .wave { display: none; }
+#soundBtn.muted-snd .mute { display: inline; }
+#soundBtn.muted-snd { color: var(--muted); }
+.lang-btn { font: 700 14px/1 Tahoma, "Segoe UI", sans-serif; min-width: 38px; }
+.tour-btn { display: inline-flex; align-items: center; gap: 6px; color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+.tour-btn.nudge { animation: nudge 1.6s ease-in-out 3; }
+@keyframes nudge { 50% { box-shadow: 0 0 0 6px var(--accent-soft); transform: translateY(-1px); } }
+.top-actions { flex-wrap: wrap; justify-content: flex-end; }
+.lang-login { display: block; margin: 12px auto 0; font-size: 12.5px; color: var(--muted); }
+
+.tour { position: fixed; inset: 0; z-index: 160; pointer-events: none; }
+.tour-spot { position: fixed; border-radius: 14px; border: 2px solid var(--accent); box-shadow: 0 0 0 9999px rgba(5, 10, 20, .58), 0 0 24px rgba(45, 212, 191, .55); transition: all .35s cubic-bezier(.2, .7, .2, 1); pointer-events: none; }
+.tour-card {
+  position: fixed; width: min(360px, calc(100vw - 24px)); padding: 14px 16px; border-radius: 14px; pointer-events: auto;
+  background: color-mix(in srgb, var(--panel) 95%, transparent); border: 1px solid var(--glass-border); color: var(--text);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .4); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px);
+}
+.tour-card.pop { animation: rise .35s cubic-bezier(.2, .7, .2, 1) both; }
+.tour-top { display: flex; justify-content: space-between; align-items: center; }
+.tour-n { font: 700 11px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--accent); background: var(--accent-soft); padding: 3px 7px; border-radius: 6px; }
+.tour-card > b { display: block; font-size: 15.5px; margin: 8px 0 4px; }
+.tour-card p { margin: 0 0 10px; color: var(--muted); font-size: 13.5px; line-height: 1.5; }
+.tour-dots { display: flex; gap: 5px; }
+.tour-dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--border); }
+.tour-dots i.on { background: var(--accent); width: 18px; border-radius: 4px; }
+
+.kb-help { position: fixed; inset: 0; z-index: 170; display: grid; place-items: center; background: rgba(5, 10, 20, .5); padding: 16px; }
+.kb-card { width: min(420px, 100%); padding: 16px 18px; border-radius: 16px; background: color-mix(in srgb, var(--panel) 96%, transparent); border: 1px solid var(--glass-border); box-shadow: 0 24px 70px rgba(0, 0, 0, .45); animation: rise .3s ease both; }
+.kb-card:focus { outline: none; }
+.kb-card table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13.5px; }
+.kb-card td { padding: 7px 4px; border-top: 1px dashed var(--border); }
+.kb-card td:first-child { width: 72px; }
+kbd { display: inline-block; min-width: 24px; text-align: center; padding: 3px 7px; border-radius: 6px; border: 1px solid var(--border); border-bottom-width: 2px; background: var(--panel-2); font: 700 12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--text); }
+.kb-link { border: 0; background: none; padding: 0; color: var(--accent); font: inherit; cursor: pointer; text-decoration: underline dotted; }
+
+/* Arabic / right-to-left */
+html[dir="rtl"] body { font-family: "Segoe UI", Tahoma, "Noto Sans Arabic", "Noto Naskh Arabic", "Geeza Pro", Arial, sans-serif; }
+html[dir="rtl"] .map, html[dir="rtl"] .fednet, html[dir="rtl"] .xray-wrap, html[dir="rtl"] .hyper-wrap, html[dir="rtl"] .photo, html[dir="rtl"] #specCanvas,
+html[dir="rtl"] .arch, html[dir="rtl"] code, html[dir="rtl"] .spark, html[dir="rtl"] #pad { direction: ltr; }
+html[dir="rtl"] .sidebar { border-right: 0; border-left: 1px solid rgba(255, 255, 255, .06); }
+html[dir="rtl"] #nav a.active::before { left: auto; right: -14px; }
+html[dir="rtl"] .timeline { padding: 0 18px 0 0; }
+html[dir="rtl"] .timeline::before { left: auto; right: 5px; }
+html[dir="rtl"] .timeline li { padding: 0 12px 14px 0; }
+html[dir="rtl"] .timeline li::before { left: auto; right: -18px; }
+html[dir="rtl"] .finding { border-left: 0; border-right: 3px solid var(--danger); border-radius: 8px 0 0 8px; }
+html[dir="rtl"] .finding.low { border-right-color: var(--warn); }
+html[dir="rtl"] .finding.none { border-right-color: var(--ok); }
+html[dir="rtl"] .site-card { right: auto; left: 10px; }
+html[dir="rtl"] .info-pop { right: auto; left: 0; }
+html[dir="rtl"] .info-pop::before { right: auto; left: 28px; }
+html[dir="rtl"] .info-pop .steps li { padding: 6px 32px 6px 0; }
+html[dir="rtl"] .info-pop .steps li::before { left: auto; right: 0; }
+html[dir="rtl"] .xray-legend { left: auto; right: 10px; }
+html[dir="rtl"] .select-glass::after { right: auto; left: 12px; }
+html[dir="rtl"] .case-head .select-glass select { padding: 9px 12px 9px 36px; }
+html[dir="rtl"] .tbl th, html[dir="rtl"] .profile th, html[dir="rtl"] .login-card, html[dir="rtl"] .sc-open button, html[dir="rtl"] .flow-step { text-align: right; }
+html[dir="rtl"] .profile td:last-child { text-align: left; }
+html[dir="rtl"] .demo-chip #demoTime { text-align: left; }
+html[dir="rtl"] .flow-arrow, html[dir="rtl"] .sign-out svg { transform: scaleX(-1); display: inline-block; }
+html[dir="rtl"] #loginId, html[dir="rtl"] #loginPw { direction: ltr; text-align: right; }
+html[dir="rtl"] .field, html[dir="rtl"] .kpi .lbl, html[dir="rtl"] .mc small, html[dir="rtl"] .sc-stats small, html[dir="rtl"] .pal-lbl, html[dir="rtl"] .badge { letter-spacing: 0; text-transform: none; }
+@media (max-width: 900px) {
+  html[dir="rtl"] .officer { right: auto; left: 10px; }
+  html[dir="rtl"] .brand { margin-right: 0; margin-left: 90px; }
+}
+@media (max-width: 1100px) { .tour-btn span { display: none; } }

@@ -229,6 +229,7 @@
     S.stats.flags += 1;
     log(id, 'AI flag · ' + c.tag + ' → case ' + c.id + ' (opened from map)', 'danger');
     S.currentCase = c.id;
+    if (NL.cue) NL.cue('flag');
     go('case');
   }
   function initMap() {
@@ -355,8 +356,10 @@
             log('DXB', 'AI flag · ' + b.tag + ' · M1 model ' + m1s + ' → fused ' + fused + ' → case ' + c.id, 'danger');
           }
           caseId = c.id; S.currentCase = c.id; S.bagStatus[b.tag] = 'flagged';
+          if (NL.cue) NL.cue('flag', $('#xray').parentNode);
         } else {
           S.bagStatus[b.tag] = 'cleared';
+          if (NL.cue) NL.cue('clear', $('#xray').parentNode);
           log('DXB', b.tag + ' cleared (M1 ' + m1s + ', fused ' + fused + ')', 'ok');
         }
         $('#latency').textContent = res ? res.ms.toFixed(0) + ' ms' : 'n/a';
@@ -449,6 +452,7 @@
       NL.scanScene($('#xray'), S.build, {
         onDone: function (res) {
           S.buildRes = res;
+          if (NL.cue && res) NL.cue(res.score >= 50 ? 'flag' : 'clear', $('#xray').parentNode);
           S.lastLane = { kind: 'build', res: res, m1: res ? res.score : 0, fused: res ? res.score : 0, truth: NL.sceneHasConcealment(S.build), truthLabel: truthLabels(S.build) };
           $('#latency').textContent = res ? res.ms.toFixed(0) + ' ms' : 'n/a';
           renderLaneResult(); resolve(res);
@@ -472,6 +476,7 @@
     NL.scanScene($('#xray'), { image: img }, {
       onDone: function (res) {
         var xl = xrayLikeness($('#xray')._off), ood = xl.light < 0.45 || xl.warm < 0.15;
+        if (NL.cue && res && !ood) NL.cue(res.score >= 50 ? 'flag' : 'clear', $('#xray').parentNode);
         S.lastLane = { kind: 'upload', res: res, m1: res ? res.score : 0, fused: res ? res.score : 0, truth: null, ood: ood, xl: xl };
         $('#latency').textContent = res ? res.ms.toFixed(0) + ' ms' : 'n/a';
         renderLaneResult();
@@ -711,7 +716,7 @@
   function profileHtml() {
     var P = S.profile, im = imprintSummary();
     if (!P) return '';
-    var logo = im && im.hits / im.n >= 0.5, round = P.circ > 0.95;
+    var logo = im && im.hits / im.n >= 0.5, round = P.circ > 0.9;
     var match = logo && round && P.dMean >= 7.0 && P.dMean <= 8.5;
     var row = function (k, v, badge) { return '<tr><th>' + k + '</th><td>' + v + '</td><td><span class="badge ' + badge[0] + '">' + badge[1] + '</span></td></tr>'; };
     return '<div class="profile"><div class="muted small"><b>Forensic physical profile</b> · calibrated from the scale bar (' + P.ticks + ' ticks, ' + P.pxPerMm.toFixed(2) + ' px/mm)</div><table>' +
@@ -1060,6 +1065,7 @@
     var hit = false;
     if (pt) { var md = CH.mask.getContext('2d').getImageData(Math.round(pt.x), Math.round(pt.y), 1, 1).data; hit = md[0] > 127; }
     var youOk = pt ? (truth && hit) : !truth, aiOk = aiFlag === truth;
+    if (NL.cue) NL.cue(aiFlag ? 'flag' : 'clear', $('#chCanvas').parentNode);
     if (youOk) CH.you++; if (aiOk) CH.ai++;
     CH.results.push({ truth: truth, youOk: youOk, aiOk: aiOk, ai: res.score, ms: res.ms, clicked: !!pt });
     var cv = $('#chCanvas'), ctx = cv.getContext('2d');
@@ -1403,6 +1409,6 @@
     setInterval(background, 2600);
   }
 
-  NL.app = { go: go, runDemo: runDemo, state: S };
+  NL.app = { go: go, runDemo: runDemo, state: S, scanNext: scanNext, setLaneMode: setLaneMode };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })(window.NL);

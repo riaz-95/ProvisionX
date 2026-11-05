@@ -25,8 +25,9 @@ A federated learning loop retrains every site after each lab-confirmed seizure. 
 
 ## How to test it (paste into Eureka)
 0. **Sign in** with the pre-filled demo account: officer ID `MOHAP-DC-0427`, password `demo`. Mariam Al Noor, MOHAP Pharmaceutical Control Inspector, is a fictional officer.
-1. Press **▶ Run full demo** (top right). It plays one bag end to end in about 60 seconds, with captions: X-ray flag → case → officer photo → hyperspectral ID → seizure → federated retraining.
-2. Or explore each screen from the left menu:
+1. New to the prototype? Press **Judge tour** (top right) for a 5-step guided tour of the things to try. Press **ع** to switch the whole interface to Arabic (right-to-left). Press **?** for keyboard shortcuts (N next bag, D demo, T tour, L language, M mute). Flagged bags trigger a sound and a vibration on phones.
+2. Press **▶ Run full demo** (top right). It plays one bag end to end in about 60 seconds, with captions: X-ray flag → case → officer photo → hyperspectral ID → seizure → federated retraining.
+3. Or explore each screen from the left menu:
    - **Command Dashboard:** click any entry point on the UAE map. It zooms in and shows site stats. *Open new case here* runs the live model on a fresh scan and opens the case.
    - **Live Lane (M1):** the live model scans each belt bag, including 4 *tricky* bags. Tick *Ground truth* to check the AI's answer.
      - **Build your own bag:** add items, hide drugs, drag things around, then press *Scan with AI*.
@@ -38,7 +39,7 @@ A federated learning loop retrains every site after each lab-confirmed seizure. 
    - **Novel-Drug Predictor (M4):** press *Run prediction cycle*.
    - **Learning Loop:** press *Lab confirms → retrain network*.
    - **AI Models:** model cards with held-out test metrics. Press *Test on 40 brand-new random bags* to benchmark the model live.
-3. The theme button (top right) switches between light and dark mode. The layout works on mobile.
+4. The theme button (top right) switches between light and dark mode. The layout works on mobile.
 
 ## Files
 ```
