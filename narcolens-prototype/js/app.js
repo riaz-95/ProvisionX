@@ -103,6 +103,7 @@
 
   // ---------------- navigation ----------------
   function go(screen) {
+    if (typeof closeInfo === 'function') closeInfo(false);
     if (!SCREENS[screen]) screen = 'dashboard';
     S.screen = screen;
     $$('.screen').forEach(function (s) { s.hidden = s.id !== 'screen-' + screen; });
@@ -1008,6 +1009,30 @@
     });
   }
 
+  // ---------------- info popovers (ⓘ buttons) ----------------
+  var openInfo = null;
+  function closeInfo(returnFocus) {
+    if (!openInfo) return;
+    var btn = openInfo.btn;
+    openInfo.pop.hidden = true; btn.setAttribute('aria-expanded', 'false');
+    openInfo = null;
+    if (returnFocus) btn.focus();
+  }
+  function initInfoPopovers() {
+    document.addEventListener('click', function (e) {
+      var btn = e.target.closest('[data-info]');
+      if (btn) {
+        var pop = document.getElementById(btn.dataset.info), same = openInfo && openInfo.pop === pop;
+        closeInfo(false);
+        if (!same) { pop.hidden = false; btn.setAttribute('aria-expanded', 'true'); openInfo = { btn: btn, pop: pop }; pop.focus(); }
+        return;
+      }
+      if (openInfo && e.target.closest('.info-x')) { closeInfo(true); return; }
+      if (openInfo && !e.target.closest('.info-pop')) closeInfo(false);
+    });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && openInfo) closeInfo(true); });
+  }
+
   // ---------------- challenge: you vs the AI ----------------
   var CH = null;
   function chStart() {
@@ -1352,6 +1377,7 @@
     initPad();
     initWhatIf();
     initChallenge();
+    initInfoPopovers();
     $('#caseHead').addEventListener('change', function (e) { if (e.target.id === 'caseSelect') { S.currentCase = e.target.value; renderCase(); } });
     $('#caseActions').addEventListener('click', function (e) { var b = e.target.closest('[data-act]'); if (b) caseAction(b.dataset.act); });
     $('#samplePick').addEventListener('click', function (e) { var b = e.target.closest('[data-sample]'); if (b) { S.deskSample = b.dataset.sample; S.deskAnalysed = false; renderDesk(); } });

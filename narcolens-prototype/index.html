@@ -240,18 +240,29 @@
       <section class="screen" id="screen-predict" hidden>
         <div class="kpis three" id="predKpis"></div>
         <div class="card">
-          <div class="card-h"><h3>Predicted synthetic-drug variants</h3><button class="btn primary" id="predRun" type="button">Run prediction cycle</button></div>
+          <div class="card-h">
+            <h3>Predicted synthetic-drug variants</h3>
+            <div class="card-actions">
+              <span class="info-anchor">
+                <button class="info-btn" type="button" data-info="m4Info" aria-haspopup="dialog" aria-expanded="false" aria-controls="m4Info">
+                  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><path d="M12 11v6"/><circle cx="12" cy="7.6" r="0.6" fill="currentColor"/></svg>
+                  <span>How M4 works</span>
+                </button>
+                <div class="info-pop" id="m4Info" role="dialog" aria-label="How M4 works" tabindex="-1" hidden>
+                  <div class="info-pop-h"><b>How M4 works</b><button class="info-x" type="button" aria-label="Close">&times;</button></div>
+                  <ol class="steps plain">
+                    <li><b>Watch the trend.</b> Seizure data, lab results and international early-warning feeds show which drug families are mutating.</li>
+                    <li><b>Predict the fingerprint.</b> A graph neural network predicts the spectrum a new variant would produce, from its family's known chemistry.</li>
+                    <li><b>Validate.</b> Forensic chemists approve each prediction against reference samples.</li>
+                    <li><b>Push to M3.</b> Every hyperspectral camera in the network can now recognise the variant &ndash; before its first seizure.</li>
+                  </ol>
+                </div>
+              </span>
+              <button class="btn primary" id="predRun" type="button">Run prediction cycle</button>
+            </div>
+          </div>
           <div class="table-wrap"><table class="tbl" id="predTable"></table></div>
           <p class="muted small">Chemical structures are withheld in this interface. Predictions are used only to extend the detection library and are validated against lab reference samples before going live.</p>
-        </div>
-        <div class="card">
-          <h3>How M4 works</h3>
-          <ol class="steps plain">
-            <li><b>Watch the trend.</b> Seizure data, lab results and international early-warning feeds show which drug families are mutating.</li>
-            <li><b>Predict the fingerprint.</b> A graph neural network predicts the spectrum a new variant would produce, from its family's known chemistry.</li>
-            <li><b>Validate.</b> Forensic chemists approve each prediction against reference samples.</li>
-            <li><b>Push to M3.</b> Every hyperspectral camera in the network can now recognise the variant &ndash; before its first seizure.</li>
-          </ol>
         </div>
       </section>
 
