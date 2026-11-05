@@ -173,3 +173,17 @@ window.NL.seedLinks = {
   'PCL-POST-55120': { sender: 'SND-4471', route: 'P-07', method: 'soaked-paper' },
   'CGO-JEA-30988': { sender: 'CNS-2290', route: 'S-04', method: 'door-panels' }
 };
+
+/* Fictional demo accounts (not real people). The signed-in account becomes NL.officer. */
+window.NL.officers = {
+  officer: window.NL.officer,
+  supervisor: {
+    id: 'DC-SUP-0112', password: 'demo', role: 'supervisor',
+    name: 'Khalid Al Mansouri', short: 'Sup. K. Al Mansouri', initials: 'KM',
+    title: 'Duty Supervisor', org: 'Dubai Customs · Passenger Operations (demo)', post: 'DXB Terminal 3 · Command Room',
+    chip: 'Supervisor · DXB T3 Command'
+  }
+};
+window.NL.officer.role = 'officer';
+window.NL.officer.chip = 'MOHAP · DXB T3 Desk 2';
+window.NL.officer.title = 'Pharmaceutical Control Inspector';

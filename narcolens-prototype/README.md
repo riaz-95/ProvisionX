@@ -29,6 +29,9 @@ A federated learning loop retrains every site after each lab-confirmed seizure. 
 2. Press **▶ Run full demo** (top right). It plays one bag end to end in about 60 seconds, with captions: X-ray flag → case → officer photo → hyperspectral ID → seizure → federated retraining.
 3. Or explore each screen from the left menu:
    - **Command Dashboard:** click any entry point on the UAE map. It zooms in and shows site stats. *Open new case here* runs the live model on a fresh scan and opens the case.
+   - **Inspection Case add-ons:** *Evidence pack* opens a court-style report (X-ray with AI heatmap, tablets, spectrum, chain of custody) that you can print or save as PDF. *Ask NarcoLens* is a scripted assistant that explains the flag, shows linked cases, suggests the next step and drafts the seizure report.
+   - **Supervisor:** sign in with the *Supervisor* role (ID `DC-SUP-0112`, password `demo`) to approve seizures, review officer overrides and see the audit log.
+   - **Command Dashboard:** the *Seizure heat calendar* recommends where to place K9 teams next week.
    - **Network analytics:** a link graph of cases tied together by sender, route pattern and concealment method, with auto-generated insights such as "4 parcels from the same sender across 2 sites". Click an insight to spotlight that cluster. New cases flagged today join the graph live.
    - **Live Lane (M1):** the live model scans each belt bag, including 4 *tricky* bags. Tick *Ground truth* to check the AI's answer.
      - **Build your own bag:** add items, hide drugs, drag things around, then press *Scan with AI*.

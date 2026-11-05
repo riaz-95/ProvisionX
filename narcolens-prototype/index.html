@@ -19,11 +19,12 @@
       </svg>
       <h1>NarcoLens</h1>
       <p class="login-sub">Drug Detection Network &middot; Officer sign-in</p>
+      <div class="role-pick" role="group" aria-label="Demo account"><button type="button" data-role="officer" class="on">Inspector</button><button type="button" data-role="supervisor">Supervisor</button></div>
       <label class="field">Officer ID<input id="loginId" value="MOHAP-DC-0427" spellcheck="false"></label>
       <label class="field">Password<input id="loginPw" type="password" value="demo"></label>
       <p class="login-err" id="loginErr" hidden>Incorrect officer ID or password. Use the demo account below.</p>
       <button class="btn primary block" type="submit" id="loginBtn">Sign in</button>
-      <div class="demo-acct">
+      <div class="demo-acct" id="demoAcct">
         <span class="avatar">MN</span>
         <div><b>Mariam Al Noor</b><small>Pharmaceutical Control Inspector &middot; MOHAP Drug Control Dept</small><small class="demo-note">Demo account &middot; fictional officer &middot; ID MOHAP-DC-0427 &middot; password <code>demo</code></small></div>
       </div>
@@ -47,6 +48,7 @@
         <a href="#dashboard" data-screen="dashboard"><span class="num">01</span><span>Command Dashboard</span></a>
         <a href="#lane" data-screen="lane"><span class="num">M1</span><span>Live Lane &middot; X-ray Vision</span></a>
         <a href="#case" data-screen="case"><span class="num">M5</span><span>Inspection Case &middot; Fusion</span></a>
+        <a href="#review" data-screen="review" class="sup-only"><span class="num">SUP</span><span>Supervisor review</span></a>
         <a href="#network" data-screen="network"><span class="num">NET</span><span>Network analytics</span></a>
         <a href="#desk" data-screen="desk"><span class="num">M2</span><span>Inspection Desk &middot; Pills &amp; Labels</span></a>
         <a href="#hyper" data-screen="hyper"><span class="num">M3</span><span>Hyperspectral ID</span></a>
@@ -98,6 +100,7 @@
             </div>
           </div>
         </div>
+        <div class="card" id="heatCard" data-noi18n></div>
         <div class="card">
           <div class="card-h"><h3>How the five modules work together</h3><span class="muted small">Click a step to open it</span></div>
           <div class="flow" id="flow">
@@ -172,9 +175,24 @@
             <div class="card-h"><h3>M5 fusion score</h3><span class="muted small">explainable</span></div>
             <div id="fusion"></div>
             <div class="actions-row" id="caseActions"></div>
-            <p class="fair">&#9878; Risk factors use bag, route, booking-timing and sensor evidence only. Nationality, ethnicity, religion and gender are never model inputs. The officer makes every decision; the lab result is the legal proof.</p>
+            <p class="fair" id="fairNote">&#9878; Risk factors use bag, route, booking-timing and sensor evidence only. Nationality, ethnicity, religion and gender are never model inputs. The officer makes every decision; the lab result is the legal proof.</p>
           </div>
         </div>
+      </section>
+
+      <!-- SUPERVISOR REVIEW -->
+      <section class="screen" id="screen-review" hidden data-noi18n>
+        <div class="kpis three" id="supKpis"></div>
+        <div class="grid-2">
+          <div class="stack"><div class="card" id="supQueue"></div><div class="card" id="supOverrides"></div></div>
+          <div class="stack"><div class="card" id="supSites"></div><div class="card" id="supAudit"></div></div>
+        </div>
+      </section>
+
+      <!-- EVIDENCE PACK -->
+      <section class="screen" id="screen-report" hidden data-noi18n>
+        <div class="report-actions"><button class="btn primary" id="repPrint" type="button">&#128424; Print / Save as PDF</button><button class="btn" id="repBack" type="button">&larr; Back to case</button></div>
+        <article class="card report" id="report"></article>
       </section>
 
       <!-- NETWORK ANALYTICS -->
@@ -350,6 +368,7 @@
   <script src="js/network.js"></script>
   <script src="js/app.js"></script>
   <script src="js/federated.js"></script>
+  <script src="js/addons.js"></script>
   <script src="js/extras.js"></script>
 </body>
 </html>

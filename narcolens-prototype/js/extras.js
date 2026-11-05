@@ -49,6 +49,8 @@
     ['M', 'Mute / unmute alert sounds', 'كتم / تشغيل صوت التنبيهات'],
     ['1 – 9', 'Jump to a screen in the menu', 'الانتقال إلى شاشة في القائمة'],
     ['0', 'Open network analytics', 'فتح تحليلات الشبكة'],
+    ['A', 'Ask the case assistant', 'اسأل مساعد القضية'],
+    ['E', 'Open the evidence pack', 'فتح حزمة الأدلة'],
     ['?', 'Show this help', 'عرض هذه المساعدة'],
     ['Esc', 'Close panels, tour or help', 'إغلاق اللوحات أو الجولة أو المساعدة']
   ];
@@ -75,6 +77,8 @@
     else if (k === 'l') { e.preventDefault(); NL.i18n.set(NL.i18n.lang === 'ar' ? 'en' : 'ar'); }
     else if (k === 'm') { e.preventDefault(); setSound(!SND.on); if (SND.on) NL.cue('clear'); }
     else if (k === '0') { e.preventDefault(); A.go('network'); }
+    else if (k === 'a') { e.preventDefault(); if (NL.state.screen !== 'case') A.go('case'); setTimeout(function () { A.caseAction('assist'); }, 60); }
+    else if (k === 'e') { e.preventDefault(); var c = A.current(); if (c) { NL.reportCase = c.id; A.go('report'); } }
     else if (/^[1-9]$/.test(k)) {
       var links = document.querySelectorAll('#nav a'), a = links[+k - 1];
       if (a) { e.preventDefault(); A.go(a.dataset.screen); }

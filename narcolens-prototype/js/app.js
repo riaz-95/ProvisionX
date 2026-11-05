@@ -14,6 +14,8 @@
     predict: { title: 'Novel-Drug Predictor · M4', sub: 'Predicts the spectral fingerprint of new synthetic-drug variants before they are ever seized, and pushes them into the M3 library.' },
     learn: { title: 'Learning Loop · Federated Retraining', sub: 'Every confirmed seizure makes every site smarter. Models train locally; only model updates – never raw images – leave a site.' },
     network: { title: 'Network Analytics · Linked Cases', sub: 'Cases linked by sender, route pattern and concealment method. Clusters across entry points reveal smuggling networks, not just single bags.' },
+    review: { title: 'Supervisor Review · Approvals & Audit', sub: 'Sign off seizures, review cases where officers overrode the AI, and audit every action – human oversight built into the workflow.' },
+    report: { title: 'Evidence Pack · Court-ready Report', sub: 'Everything NarcoLens recorded about this case in one printable document, with the chain of custody.' },
     challenge: { title: 'Challenge · You vs the AI', sub: 'Five random X-ray bags the model has never seen. Click where you think drugs are hidden, then see the live M1 heatmap and the ground truth.' },
     models: { title: 'AI Models · Live Test', sub: 'The trained models behind M1 and M2, their held-out test results, and buttons to test them on brand-new data right now – in this browser.' }
   };
@@ -27,7 +29,9 @@
     learn: [['sim', 'Federated round · illustration']],
     models: [['live', 'Benchmarks run live in this browser']],
     challenge: [['live', 'M1 trained CNN · live'], ['algo', 'Fresh random bags every round']],
-    network: [['algo', 'Link analysis · live algorithm'], ['sim', 'Historical cases · simulated']]
+    network: [['algo', 'Link analysis · live algorithm'], ['sim', 'Historical cases · simulated']],
+    review: [['algo', 'Approvals & audit from live case data'], ['sim', 'Demo supervisor account']],
+    report: [['algo', 'Generated from this case\'s evidence']]
   };
 
   // ---------------- state ----------------
@@ -560,7 +564,10 @@
     } else if (/Seized/.test(c.status)) {
       a.push('<button class="btn primary" data-act="tolearn">Go to learning loop &rarr;</button>');
     }
+    a.push('<button class="btn" data-act="report">&#128196; Evidence pack</button>');
+    a.push('<button class="btn" data-act="assist">&#128172; Ask NarcoLens</button>');
     $('#caseActions').innerHTML = a.join('');
+    if (NL.assistRender) NL.assistRender(c);
   }
 
   // ----- what-if fusion explorer -----
@@ -605,6 +612,10 @@
       addTimeline(c, 'OFFICER', 'Seizure by ' + (NL.officer ? NL.officer.short : 'Officer') + ' · sample sent to forensic lab', 'Chain of custody started. AI evidence pack (images, spectra, scores) attached.', 'danger');
       log(c.site, c.id + ' seized – sample to forensic lab', 'danger');
       renderCase();
+    } else if (act === 'report') {
+      NL.reportCase = c.id; go('report');
+    } else if (act === 'assist') {
+      var box = $('#assistInput'); if (box) { box.scrollIntoView({ block: 'center', behavior: 'smooth' }); box.focus({ preventScroll: true }); }
     } else if (act === 'tolearn') {
       go('learn');
     }
@@ -754,7 +765,7 @@
     var c = current(), s = NL.deskSamples[S.deskSample];
     if (!c || !S.deskAnalysed) return;
     var sc = deskScore(), sum = deskSummary();
-    c.evidence.m2 = { score: sc, text: sum };
+    c.evidence.m2 = { score: sc, text: sum, sample: S.deskSample, profile: S.profile, crops: (S.crops || []).map(function (x) { return { img: x.canvas.toDataURL('image/png'), top: x.res.top, p: x.res.probs[x.res.top] }; }) };
     addTimeline(c, 'M2', sum + ' · score ' + sc, 'Imprints from the live M2 model; ' + s.registry.text.replace('✕ ', '').toLowerCase() + ' (simulated OCR).', 'danger');
     log(c.site, c.id + ' · M2: ' + sum, 'danger');
     $('#deskAttach').textContent = 'Attached to ' + c.id + ' ✓';
@@ -847,6 +858,8 @@
     if (!R || !c) return;
     var pct = Math.round(R.top.r * 100);
     c.evidence.m3 = R.illicit ? { score: pct, illicit: true, text: R.top.ref.name } : { score: 5, illicit: false, text: 'No controlled substance' };
+    c.evidence.m3.spectrum = $('#specCanvas').toDataURL('image/png');
+    c.evidence.m3.mix = R.unmix ? R.unmix.parts.slice(0, 3).map(function (q) { return Math.round(q.f * 100) + '% ' + q.ref.name; }).join(' + ') : '';
     addTimeline(c, 'M3', R.illicit ? R.top.ref.name + ' · ' + pct + '% spectral match' : 'No controlled substance detected',
       R.illicit ? 'Identified through the sealed pouch; ' + R.coverage + '% of contents. Mixture: ' + R.unmix.parts.slice(0, 2).map(function (q) { return Math.round(q.f * 100) + '% ' + q.ref.name; }).join(' + ') + '. Spectra saved to evidence pack.' : 'Contents match benign library entries.', R.illicit ? 'danger' : 'ok');
     log(c.site, c.id + ' · M3: ' + (R.illicit ? R.top.ref.name + ' ' + pct + '%' : 'clean'), R.illicit ? 'danger' : 'ok');
@@ -1134,10 +1147,16 @@
   // ---------------- sign-in (fictional demo officer) ----------------
   var AUTH_KEY = 'nl-signed-in';
   function isSignedIn() { try { return sessionStorage.getItem(AUTH_KEY) === '1'; } catch (e) { return false; } }
+  function setAccount(role) {
+    NL.officer = NL.officers[role] || NL.officers.officer;
+    document.body.classList.toggle('role-supervisor', NL.officer.role === 'supervisor');
+    try { sessionStorage.setItem('nl-role', NL.officer.role); } catch (e) { }
+  }
   function fillOfficer() {
     var o = NL.officer;
-    $('#offName').textContent = o.name; $('#offName').title = 'Inspector ' + o.name + ' · ' + o.role + ' · ' + o.org;
-    $('#offRole').textContent = 'MOHAP · DXB T3 Desk 2';
+    $('#offName').textContent = o.name; $('#offName').title = o.name + ' · ' + (o.title || o.role) + ' · ' + o.org;
+    $('#offRole').textContent = o.chip;
+    var av = document.querySelector('#officerChip .avatar'); if (av) av.textContent = o.initials;
   }
   function showLogin() {
     var l = $('#login');
@@ -1149,9 +1168,10 @@
   }
   function doLogin(e) {
     e.preventDefault();
-    var o = NL.officer, id = $('#loginId').value.trim().toUpperCase(), pw = $('#loginPw').value;
+    var id = $('#loginId').value.trim().toUpperCase(), pw = $('#loginPw').value;
     var form = $('#loginForm');
-    if (id !== o.id || pw !== o.password) {
+    var o = [NL.officers.officer, NL.officers.supervisor].find(function (x) { return x.id === id; });
+    if (!o || pw !== o.password) {
       $('#loginErr').hidden = false;
       form.classList.remove('shake'); void form.offsetWidth; form.classList.add('shake');
       return;
@@ -1160,11 +1180,12 @@
     btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Verifying officer credentials…';
     setTimeout(function () {
       try { sessionStorage.setItem(AUTH_KEY, '1'); } catch (err) { }
+      setAccount(o.role);
       $('#login').classList.add('leaving');
       setTimeout(function () { $('#login').hidden = true; document.body.classList.remove('locked'); }, 450);
       fillOfficer();
       log('DXB', o.short + ' signed in · ' + o.post, 'info');
-      go(S.screen);
+      go(o.role === 'supervisor' ? 'review' : (S.screen === 'review' ? 'dashboard' : S.screen));
     }, 700);
   }
   function signOut() {
@@ -1175,7 +1196,7 @@
     showLogin();
   }
 
-  var RENDER = { dashboard: renderDashboard, lane: renderLane, 'case': renderCase, desk: renderDesk, hyper: renderHyper, predict: renderPredict, learn: renderLearn, models: renderModels, challenge: renderChallenge, network: function () { NL.netRender(); NL.netAfterRender(); } };
+  var RENDER = { dashboard: renderDashboard, lane: renderLane, 'case': renderCase, desk: renderDesk, hyper: renderHyper, predict: renderPredict, learn: renderLearn, models: renderModels, challenge: renderChallenge, review: function () { NL.supRender(); }, report: function () { NL.reportRender(); }, network: function () { NL.netRender(); NL.netAfterRender(); } };
 
   // ---------------- demo runner ----------------
   function narrate(n, total, text) {
@@ -1325,14 +1346,23 @@
     $('#brandLink').addEventListener('click', function (e) { e.preventDefault(); go('dashboard'); });
     $('#loginForm').addEventListener('submit', doLogin);
     $('#signOut').addEventListener('click', signOut);
+    var savedRole = null; try { savedRole = sessionStorage.getItem('nl-role'); } catch (e) { }
+    setAccount(isSignedIn() && savedRole ? savedRole : 'officer');
     fillOfficer();
     if (!isSignedIn()) showLogin();
+    document.querySelector('#loginForm').addEventListener('click', function (e) {
+      var r = e.target.closest('[data-role]'); if (!r) return;
+      var acc = NL.officers[r.dataset.role];
+      $('#loginId').value = acc.id; $('#loginPw').value = acc.password;
+      document.querySelectorAll('#loginForm [data-role]').forEach(function (b) { b.classList.toggle('on', b === r); });
+      if (NL.onRolePick) NL.onRolePick(r.dataset.role);
+    });
 
     var start = (location.hash || '').replace('#', '');
     go(SCREENS[start] ? start : 'dashboard');
     setInterval(background, 2600);
   }
 
-  NL.app = { go: go, runDemo: runDemo, state: S, scanNext: scanNext, setLaneMode: setLaneMode, log: log };
+  NL.app = { go: go, runDemo: runDemo, state: S, scanNext: scanNext, setLaneMode: setLaneMode, log: log, newCase: newCase, addTimeline: addTimeline, fuse: fuse, lvl: lvl, decisionText: decisionText, current: current, caseAction: caseAction, esc: esc };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })(window.NL);
