@@ -961,3 +961,10 @@ html[dir="rtl"] .field, html[dir="rtl"] .kpi .lbl, html[dir="rtl"] .mc small, ht
 .fed-log li { display: grid; grid-template-columns: 44px 1fr; gap: 8px; padding: 6px 0; border-bottom: 1px dashed var(--border); }
 .fed-log time { font: 11.5px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--muted); }
 .fed-log li.bad span { color: var(--danger); font-weight: 600; }
+
+/* Map sites: yellow dot with a blue outer ring */
+.map .site { fill: #facc15; stroke: #1e3a8a; stroke-width: 1.2; }
+.map .site-ring { stroke: #3b82f6; stroke-width: 2; opacity: 1; }
+.map .site-g:hover .site-ring, .map .site-g:focus .site-ring { stroke-width: 3; }
+.map .site-g.sel .site { fill: #facc15; }
+.map .site-g.sel .site-ring { stroke: #60a5fa; stroke-width: 3.5; }
