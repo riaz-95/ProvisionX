@@ -1174,3 +1174,18 @@ html[dir="rtl"] .fan-items { left: 4px; right: 4px; }
 @media (max-width: 900px) { .fan-items { left: 0; right: auto; width: 230px; } html[dir="rtl"] .fan-items { left: auto; right: 0; } }
 .fan .fan-items .fan-item[aria-current="page"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
 .fan .fan-items .fan-item:hover, .fan .fan-items .fan-item:focus-visible { background: var(--accent-soft); }
+
+/* v13: Learning Loop privacy info */
+.fed-info { align-self: center; }
+.info-btn.icon-only { padding: 6px; width: 32px; height: 32px; justify-content: center; }
+.fed-info .info-pop { right: auto; left: 50%; margin-left: -230px; width: min(400px, 86vw); }
+.fed-info .info-pop::before { right: auto; left: 224px; }
+.fed-ptbl { width: 100%; border-collapse: collapse; margin: 8px 0 6px; font-size: 12.5px; }
+.fed-ptbl th, .fed-ptbl td { padding: 5px 6px; text-align: start; border-bottom: 1px solid var(--border); }
+.fed-ptbl th { color: var(--muted); font-weight: 600; font-size: 11.5px; }
+.fed-ptbl tr.on td { color: var(--accent); font-weight: 700; }
+html[dir="rtl"] .fed-info .info-pop { text-align: right; }
+@media (max-width: 600px) { .fed-info .info-pop { margin-left: 0; left: 16px; } }
+.card:has(.info-pop:not([hidden])) { position: relative; z-index: 60; }
+.fed-info .info-pop { background: var(--panel); }
+@media (max-width: 900px) { body:has(.info-pop:not([hidden])) .fan { display: none; } }

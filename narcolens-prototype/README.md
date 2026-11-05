@@ -45,7 +45,7 @@ A federated learning loop retrains every site after each lab-confirmed seizure. 
    - **AI Lab** (the animated orb at the bottom left of the side menu, or press **G**): it opens a short list with *AI Models · live test* and *Challenge · You vs AI*.
    - **Challenge · You vs AI** (AI Lab): 5 fresh random bags. Click where you think drugs are hidden, then compare with the model.
    - **Novel-Drug Predictor (M4):** press *Run prediction cycle*.
-   - **Learning Loop:** an interactive federated-learning simulator. Click a site to train it locally or take it offline. Run rounds (or auto-run), set the privacy level, and switch on a *poisoned update* to see the core reject it. Watch the recall curve and the round log.
+   - **Learning Loop:** an interactive federated-learning simulator. Click a site to train it locally or take it offline. Run rounds (or auto-run), set the privacy level (press the ⓘ next to it to see how privacy works and what Low / Medium / High mean), and switch on a *poisoned update* to see the core reject it. Watch the recall curve and the round log.
    - **AI Models** (AI Lab): model cards with held-out test metrics. Press *Test on 40 brand-new random bags* to benchmark the model live.
 4. The layout works on mobile. There the AI Lab orb floats in the bottom-left corner.
 

@@ -54,6 +54,7 @@
     $('#fedPriv').innerHTML = '<span class="nt-lbl">' + L('Privacy', 'الخصوصية') + '</span><span class="seg">' + Object.keys(PRIV).map(function (k) {
       return '<button type="button" data-priv="' + k + '" class="' + (F.privacy === k ? 'on' : '') + '" title="ε = ' + PRIV[k].eps + '">' + PRIV[k][AR() ? 'ar' : 'en'] + '</button>';
     }).join('') + '</span>';
+    drawInfo();
     $('#fedPoisonLbl').textContent = L('Simulate a poisoned update', 'محاكاة تحديث مسموم');
     $('#fedPoison').checked = F.poison;
     var online = NL.sites.filter(function (s) { return F.sites[s.id].online; }).length, ready = NL.sites.filter(function (s) { return F.sites[s.id].ready && F.sites[s.id].online; }).length;
@@ -132,6 +133,26 @@
     });
   }
   function nodeClass(ids, cls, on) { ids.forEach(function (id) { var g = document.querySelector('#fedNet [data-site="' + id + '"]'); if (g) g.classList.toggle(cls, on); }); }
+  // ⓘ "How it works" popover next to the privacy switch
+  function drawInfo() {
+    var t = L('How privacy works', 'كيف تعمل الخصوصية');
+    $('#fedInfoTitle').textContent = t;
+    $('#fedInfoBtn').setAttribute('aria-label', t); $('#fedInfoBtn').title = t; $('#fedInfo').setAttribute('aria-label', t);
+    $('.fed-info .info-x').setAttribute('aria-label', L('Close', 'إغلاق'));
+    var noise = { low: L('Light', 'خفيف'), medium: L('Moderate', 'متوسط'), high: L('Strong', 'قوي') };
+    $('#fedInfoBody').innerHTML =
+      '<ol class="steps plain">' +
+      '<li><b>' + L('Train locally.', 'تدريب محلي.') + '</b> ' + L('Each site retrains on its own lab-confirmed seizures. Raw X-ray images never leave the site.', 'يعيد كل موقع التدريب على ضبطياته المؤكدة مخبرياً. لا تغادر صور الأشعة الخام الموقع أبداً.') + '</li>' +
+      '<li><b>' + L('Add noise.', 'إضافة ضجيج.') + '</b> ' + L('Before sending, the site adds random noise to its model update (differential privacy), so no single bag or seizure can be worked out from it. The privacy level sets how much noise.', 'قبل الإرسال، يضيف الموقع ضجيجاً عشوائياً إلى تحديث النموذج (الخصوصية التفاضلية)، فلا يمكن استنتاج أي حقيبة أو ضبطية بعينها منه. يحدد مستوى الخصوصية مقدار الضجيج.') + '</li>' +
+      '<li><b>' + L('Encrypt and combine.', 'التشفير والتجميع.') + '</b> ' + L('Updates travel encrypted and are averaged at the core. Outliers, such as a poisoned update, are rejected.', 'تنتقل التحديثات مشفّرة وتُجمَّع في النواة. وتُرفض التحديثات الشاذة مثل التحديث المسموم.') + '</li>' +
+      '<li><b>' + L('Deploy.', 'النشر.') + '</b> ' + L('The improved model goes back to every site.', 'يعود النموذج المحسَّن إلى كل المواقع.') + '</li>' +
+      '</ol>' +
+      '<table class="fed-ptbl"><thead><tr><th>' + L('Level', 'المستوى') + '</th><th>ε</th><th>' + L('Noise', 'الضجيج') + '</th><th>' + L('Learning speed', 'سرعة التعلّم') + '</th></tr></thead><tbody>' +
+      Object.keys(PRIV).map(function (k) {
+        return '<tr' + (F.privacy === k ? ' class="on"' : '') + '><td>' + PRIV[k][AR() ? 'ar' : 'en'] + (F.privacy === k ? ' ✓' : '') + '</td><td>' + PRIV[k].eps + '</td><td>' + noise[k] + '</td><td>' + Math.round(PRIV[k].f * 100) + '%</td></tr>';
+      }).join('') + '</tbody></table>' +
+      '<p class="muted small">' + L('Smaller ε = stronger privacy but slower learning. The ε values are realistic; the learning-speed effect is simulated.', 'كلما صغرت ε زادت الخصوصية وتباطأ التعلّم. قيم ε واقعية، أما أثرها على سرعة التعلّم فمحاكاة.') + '</p>';
+  }
   function setStep(i) { F.step = i; if ($('#fedSteps')) drawControls(); }
   function status(en, ar) { var s = $('#learnStatus'); if (s) s.textContent = L(en, ar); }
   function now() { return NL.state.clock.toTimeString().slice(0, 5); }

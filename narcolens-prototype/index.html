@@ -307,6 +307,15 @@
               <button class="btn primary" id="learnGo" type="button">&#9654; Run 1 round</button>
               <button class="btn" id="fedAuto" type="button">Auto-run rounds</button>
               <span id="fedPriv" class="fed-priv"></span>
+              <span class="info-anchor fed-info">
+                <button class="info-btn icon-only" id="fedInfoBtn" type="button" data-info="fedInfo" aria-haspopup="dialog" aria-expanded="false" aria-controls="fedInfo">
+                  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><path d="M12 11v6"/><circle cx="12" cy="7.6" r="0.6" fill="currentColor"/></svg>
+                </button>
+                <div class="info-pop" id="fedInfo" role="dialog" tabindex="-1" hidden>
+                  <div class="info-pop-h"><b id="fedInfoTitle"></b><button class="info-x" type="button" aria-label="Close">&times;</button></div>
+                  <div id="fedInfoBody"></div>
+                </div>
+              </span>
               <label class="nt-chip" style="--c:#ef4444"><input type="checkbox" id="fedPoison"><i></i><span id="fedPoisonLbl">Simulate a poisoned update</span></label>
             </div>
             <div class="fed-steps" id="fedSteps"></div>
