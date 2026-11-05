@@ -1142,3 +1142,35 @@ html[dir="rtl"] .fan.open .fan-item[style*="--i:1"] { transform: translate(-26px
 body.locked .fan { display: none; }
 @media print { .fan, .um { display: none !important; } }
 @media (max-width: 600px) { #clock > span { display: none; } .top-actions { flex-wrap: nowrap; gap: 6px; } }
+
+/* ======================= v12: segmented Theme/Language, plain avatar, chevron state, AI Lab vertical list ======================= */
+.um-btn .avatar { box-shadow: none; }
+.um-btn, .um-btn:hover, .um-btn[aria-expanded="true"] { border-color: var(--glass-border); box-shadow: none; }
+.um-btn:hover, .um-btn[aria-expanded="true"] { background: var(--glass-strong, var(--glass)); color: var(--text); }
+.um-btn:focus { outline: none; } .um-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.um-caret { transition: transform .2s ease; }
+.um-btn[aria-expanded="true"] .um-caret { transform: rotate(180deg); }
+.um-row { display: flex; align-items: center; gap: 10px; padding: 7px 8px; font: 500 13.5px/1.2 inherit; color: var(--text); }
+.um-row > svg { flex: none; color: var(--muted); }
+.um-row > span { flex: 1; }
+.um-seg { display: inline-flex; padding: 2px; border-radius: 9px; background: var(--panel-2, rgba(127,127,127,.12)); border: 1px solid var(--border); }
+.um-pop .um-seg button { width: auto; padding: 4px 10px; border-radius: 7px; font-size: 12px; font-weight: 600; color: var(--muted); }
+.um-pop .um-seg button:hover { background: transparent; color: var(--text); }
+.um-pop .um-seg button[aria-checked="true"] { background: var(--accent); color: #04201c; }
+.um-pop .um-seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+/* AI Lab: an ordered vertical list that slides up above the orb */
+.fan-items { position: absolute; left: 4px; right: 4px; bottom: calc(100% + 6px); width: auto; height: auto; display: flex; flex-direction: column; gap: 4px; padding: 6px; border-radius: 14px;
+  background: var(--glass-strong, #0b1726); border: 1px solid var(--glass-border); box-shadow: 0 12px 30px rgba(0,0,0,.35); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  opacity: 0; pointer-events: none; transform: translateY(8px); transition: opacity .18s ease, transform .22s ease; }
+.fan.open .fan-items { opacity: 1; pointer-events: auto; transform: none; }
+.fan-item, .fan.open .fan-item, .fan.open .fan-item[style*="--i:0"], .fan.open .fan-item[style*="--i:1"],
+html[dir="rtl"] .fan-item, html[dir="rtl"] .fan.open .fan-item[style*="--i:0"], html[dir="rtl"] .fan.open .fan-item[style*="--i:1"] {
+  position: static; transform: none; opacity: 1; pointer-events: auto; transition: background .15s; transition-delay: 0s; box-shadow: none;
+  width: 100%; padding: 7px 10px 7px 7px; border-radius: 10px; border: 0; background: transparent; color: var(--text); font: 500 13.5px/1.2 inherit; text-align: start; }
+.fan-item i { width: 28px; height: 28px; border-radius: 8px; }
+.fan-item:hover, .fan-item:focus-visible { background: var(--accent-soft); outline: none; }
+.fan-item[aria-current="page"] { background: var(--accent-soft); color: var(--accent); }
+html[dir="rtl"] .fan-items { left: 4px; right: 4px; }
+@media (max-width: 900px) { .fan-items { left: 0; right: auto; width: 230px; } html[dir="rtl"] .fan-items { left: auto; right: 0; } }
+.fan .fan-items .fan-item[aria-current="page"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.fan .fan-items .fan-item:hover, .fan .fan-items .fan-item:focus-visible { background: var(--accent-soft); }

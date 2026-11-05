@@ -132,14 +132,19 @@
     out: '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>'
   };
   function isDark() { var t = document.documentElement.getAttribute('data-theme'); return t ? t === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches; }
+  // a settings row with a two-option segmented switch
+  function seg(key, icon, label, opts, cur) {
+    return '<div class="um-row">' + icon + '<span>' + label + '</span><div class="um-seg" role="radiogroup" aria-label="' + label + '">' +
+      opts.map(function (o) { return '<button type="button" role="radio" data-um="' + key + '" data-v="' + o[0] + '" aria-checked="' + (o[0] === cur) + '"' + (o[0] === 'ar' ? ' lang="ar"' : '') + '>' + o[1] + '</button>'; }).join('') + '</div></div>';
+  }
   function renderUserMenu() {
     var o = NL.officer, ar = NL.i18n && NL.i18n.lang === 'ar', name = ar && NL.AR[o.name] ? NL.AR[o.name] : o.name;
     $('#umAvatar').textContent = o.initials;
     $('#userBtn').title = name + ' · ' + L('account & settings', 'الحساب والإعدادات');
     $('#userMenu').innerHTML =
       '<div class="um-head"><span class="avatar">' + o.initials + '</span><div><b>' + name + '</b><small>' + (o.role === 'supervisor' ? L('Duty Supervisor · Dubai Customs (demo)', 'مشرف مناوب · جمارك دبي (تجريبي)') : L('Pharmaceutical Control Inspector · MOHAP (demo)', 'مفتشة رقابة دوائية · وزارة الصحة (تجريبي)')) + '</small><small>' + o.id + '</small></div></div>' +
-      '<button type="button" role="menuitem" data-um="lang">' + ICON.globe + '<span>' + L('Language', 'اللغة') + '</span><em class="um-v">' + (ar ? 'العربية → EN' : 'English → ع') + '</em></button>' +
-      '<button type="button" role="menuitemcheckbox" aria-checked="' + isDark() + '" data-um="theme">' + ICON.moon + '<span>' + L('Dark mode', 'الوضع الداكن') + '</span><i class="um-switch' + (isDark() ? ' on' : '') + '"></i></button>' +
+      seg('lang', ICON.globe, L('Language', 'اللغة'), [['en', 'English'], ['ar', 'العربية']], ar ? 'ar' : 'en') +
+      seg('theme', ICON.moon, L('Theme', 'المظهر'), [['light', L('Light', 'فاتح')], ['dark', L('Dark', 'داكن')]], isDark() ? 'dark' : 'light') +
       '<button type="button" role="menuitem" data-um="keys">' + ICON.keys + '<span>' + L('Keyboard shortcuts', 'اختصارات لوحة المفاتيح') + '</span><em class="um-v">?</em></button>' +
       '<hr><button type="button" role="menuitem" class="um-out" data-um="out">' + ICON.out + '<span>' + L('Sign out', 'تسجيل الخروج') + '</span></button>';
   }
@@ -160,6 +165,7 @@
     $('#fanChallenge span').textContent = L('Challenge · You vs AI', 'التحدي · أنت ضد الذكاء');
     var sc = NL.state && NL.state.screen;
     $('#fan').classList.toggle('active', sc === 'models' || sc === 'challenge');
+    ['models', 'challenge'].forEach(function (k) { var el = $('#fan [data-fango="' + k + '"]'); if (sc === k) el.setAttribute('aria-current', 'page'); else el.removeAttribute('aria-current'); });
   }
 
   // ---------------- wiring ----------------
@@ -207,8 +213,9 @@
       e.stopPropagation();
       var b = e.target.closest('[data-um]'); if (!b) return;
       var k = b.dataset.um;
-      if (k === 'lang') { NL.i18n.set(NL.i18n.lang === 'ar' ? 'en' : 'ar'); renderUserMenu(); }
-      else if (k === 'theme') { $('#themeBtn').click(); renderUserMenu(); }
+      if (b.getAttribute('aria-checked') === 'true') return;
+      if (k === 'lang') { NL.i18n.set(b.dataset.v); renderUserMenu(); var r = $('#userMenu [data-um="lang"][aria-checked="true"]'); if (r) r.focus(); }
+      else if (k === 'theme') { $('#themeBtn').click(); renderUserMenu(); var t = $('#userMenu [data-um="theme"][aria-checked="true"]'); if (t) t.focus(); }
       else if (k === 'keys') { closeUserMenu(); showHelp(); }
       else if (k === 'out') { closeUserMenu(); $('#signOut').click(); }
     });
