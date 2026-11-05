@@ -69,7 +69,8 @@
     'Live measurement': 'قياس مباشر', 'Manual step': 'خطوة يدوية',
     // top bar
     '▶ Run full demo': '▶ تشغيل العرض الكامل', '■ Stop demo': '■ إيقاف العرض',
-    'DXB local time': 'توقيت دبي المحلي', 'Judge tour': 'جولة المحكّمين',
+    'DXB local time': 'توقيت دبي المحلي', 'Judge tour': 'جولة المحكّمين', 'Take a Tour': 'جولة تعريفية',
+    'Learn how to use NarcoLens, step by step.': 'تعرّف على استخدام NarcoLens خطوة بخطوة.',
     'Toggle light / dark theme': 'تبديل الوضع الفاتح / الداكن', 'Toggle theme': 'تبديل المظهر',
     'Sound alerts on': 'التنبيهات الصوتية مفعّلة', 'Sound alerts off': 'التنبيهات الصوتية متوقفة',
     'Sign out': 'تسجيل الخروج', 'Simulated local time at Dubai': 'التوقيت المحلي المحاكى في دبي',

@@ -14,19 +14,20 @@
   // =====================================================================
   // 1. SUPERVISOR REVIEW
   // =====================================================================
+  function ago(min) { return new Date(S.clock.getTime() - min * 60000).toTimeString().slice(0, 5); }
   function seedSupervisorCases() {
     var c1 = A.newCase({ tag: 'BAG-AUH-104882', site: 'AUH', lane: 'AUH T1 · Lane 6', route: 'Transfer · Route pattern R-17', preScore: 44,
       preText: 'Route pattern R-17; bag weight 3.2 kg above booking average.',
       m1: { score: 93, label: 'Concealment-like density (2 regions)', text: 'Two dense flat packets inside the shell lining.' } });
     c1.evidence.m3 = { score: 96, illicit: true, text: 'Amphetamine-type stimulant', mix: '81% Amphetamine-type stimulant + 19% Caffeine' };
-    c1.timeline.push({ t: '07:52', mod: 'OFFICER', title: 'Bag opened by Insp. R. Al Hammadi · AUH desk 1', text: 'Two flat packets found inside the lining.', cls: '' });
-    c1.timeline.push({ t: '07:58', mod: 'M3', title: 'Amphetamine-type stimulant · 96% spectral match', text: 'Mixture: 81% amphetamine-type + 19% caffeine.', cls: 'danger' });
-    c1.timeline.push({ t: '08:05', mod: 'OFFICER', title: 'Seizure by Insp. R. Al Hammadi · sample sent to forensic lab', text: 'Chain of custody started.', cls: 'danger' });
-    c1.timeline.push({ t: '08:41', mod: 'LAB', title: 'Lab confirmed: amphetamine-type stimulant', text: 'Lab reference AUH-FL-2291.', cls: 'danger' });
+    c1.timeline.push({ t: ago(86), mod: 'OFFICER', title: 'Bag opened by Insp. R. Al Hammadi · AUH desk 1', text: 'Two flat packets found inside the lining.', cls: '' });
+    c1.timeline.push({ t: ago(80), mod: 'M3', title: 'Amphetamine-type stimulant · 96% spectral match', text: 'Mixture: 81% amphetamine-type + 19% caffeine.', cls: 'danger' });
+    c1.timeline.push({ t: ago(73), mod: 'OFFICER', title: 'Seizure by Insp. R. Al Hammadi · sample sent to forensic lab', text: 'Chain of custody started.', cls: 'danger' });
+    c1.timeline.push({ t: ago(37), mod: 'LAB', title: 'Lab confirmed: amphetamine-type stimulant', text: 'Lab reference AUH-FL-2291.', cls: 'danger' });
     c1.status = 'Seizure confirmed by lab'; c1.sup = 'pending';
     var c2 = A.newCase({ tag: 'BAG-DWC-220415', site: 'DWC', lane: 'DWC · Lane 2', route: 'Direct arrival', preScore: 22, preText: 'No risk indicators.',
       m1: { score: 74, label: 'Dense organic mass in toiletry bag', text: 'Uniform organic density in two jar-shaped containers.' } });
-    c2.timeline.push({ t: '08:12', mod: 'OFFICER', title: 'Cleared by Insp. S. Al Ketbi', text: 'Officer override: sealed honey jars, declared on arrival card.', cls: 'ok' });
+    c2.timeline.push({ t: ago(66), mod: 'OFFICER', title: 'Cleared by Insp. S. Al Ketbi', text: 'Officer override: sealed honey jars, declared on arrival card.', cls: 'ok' });
     c2.status = 'Cleared by officer'; c2.override = 'pending'; c2.overrideReason = ['Sealed honey jars, declared on arrival card', 'برطمانات عسل مغلقة، مُصرّح عنها في بطاقة الوصول'];
     S.cases.forEach(function (c) { c.timeline.forEach(function (t) { t.fresh = false; }); });
   }

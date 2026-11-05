@@ -1059,3 +1059,86 @@ body:not(.role-supervisor) .sup-only { display: none !important; }
   .report h2 { break-after: avoid; page-break-after: avoid; }
   .report h2 + * { break-before: avoid; }
 }
+
+
+/* ======================= v11: tour tooltip, user menu, UAE time, AI Lab fan ======================= */
+#themeBtn, #officerChip { display: none !important; }
+.clock span { font-family: inherit; }
+/* tour button tooltip */
+.tour-btn { position: relative; }
+.tour-btn .tip {
+  position: absolute; top: calc(100% + 10px); left: 50%; transform: translate(-50%, -4px); white-space: nowrap; pointer-events: none;
+  background: var(--text); color: var(--bg); font: 600 12px/1.2 "Segoe UI", system-ui, sans-serif; padding: 7px 10px; border-radius: 8px;
+  opacity: 0; transition: opacity .18s, transform .18s; z-index: 60; box-shadow: 0 8px 24px rgba(0, 0, 0, .3);
+}
+.tour-btn .tip::before { content: ""; position: absolute; top: -5px; left: 50%; margin-left: -5px; border: 5px solid transparent; border-top: 0; border-bottom-color: var(--text); }
+.tour-btn:hover .tip, .tour-btn:focus-visible .tip { opacity: 1; transform: translate(-50%, 0); }
+/* user menu */
+.um { position: relative; }
+.um-btn { display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px 3px 3px; border-radius: 999px; border: 1px solid var(--glass-border); background: var(--glass); color: var(--muted); cursor: pointer; transition: border-color .2s; }
+.um-btn:hover, .um-btn[aria-expanded="true"] { border-color: var(--accent); }
+.um-btn .avatar { width: 34px; height: 34px; font-size: 12.5px; }
+.um-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.um-pop {
+  position: absolute; top: calc(100% + 8px); inset-inline-end: 0; width: 270px; z-index: 70; padding: 8px; border-radius: 14px;
+  background: color-mix(in srgb, var(--panel) 96%, transparent); border: 1px solid var(--glass-border); box-shadow: 0 20px 50px var(--glass-edge), 0 4px 14px rgba(0, 0, 0, .2);
+  -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); animation: rise .2s ease both;
+}
+.um-head { display: flex; gap: 10px; align-items: center; padding: 6px 6px 10px; border-bottom: 1px solid var(--border); margin-bottom: 6px; }
+.um-head b { display: block; font-size: 14px; } .um-head small { display: block; color: var(--muted); font-size: 11.5px; }
+.um-pop button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 8px; border: 0; border-radius: 9px; background: transparent; color: var(--text); font: 500 13.5px/1.2 inherit; cursor: pointer; text-align: start; }
+.um-pop button:hover, .um-pop button:focus-visible { background: var(--accent-soft); outline: none; }
+.um-pop button svg { flex: none; color: var(--muted); }
+.um-pop button span { flex: 1; }
+.um-v { font-style: normal; font-size: 12px; color: var(--muted); }
+.um-switch { width: 34px; height: 20px; border-radius: 999px; background: var(--border); position: relative; transition: background .2s; flex: none; }
+.um-switch::after { content: ""; position: absolute; top: 3px; inset-inline-start: 3px; width: 14px; height: 14px; border-radius: 50%; background: #fff; transition: transform .2s; }
+.um-switch.on { background: var(--accent); } .um-switch.on::after { transform: translateX(14px); }
+html[dir="rtl"] .um-switch.on::after { transform: translateX(-14px); }
+.um-pop hr { border: 0; border-top: 1px solid var(--border); margin: 6px 0; }
+.um-out, .um-out svg { color: var(--danger) !important; }
+/* AI Lab fan menu (bottom-left of the side menu) */
+.fan { margin-top: auto; position: relative; padding: 4px 4px 0; }
+.fan-btn { display: flex; align-items: center; gap: 10px; width: 100%; padding: 6px 8px; border-radius: 16px; border: 1px solid rgba(255, 255, 255, .08); background: linear-gradient(135deg, rgba(45, 212, 191, .12), rgba(109, 40, 217, .16)); color: #fff; cursor: pointer; text-align: start; transition: border-color .2s, box-shadow .2s; }
+.fan-btn:hover, .fan.open .fan-btn, .fan.active .fan-btn { border-color: #2dd4bf; box-shadow: 0 0 24px rgba(45, 212, 191, .25); }
+.fan-btn:focus-visible { outline: 2px solid #2dd4bf; outline-offset: 2px; }
+.lab-orb { position: relative; flex: none; width: 46px; height: 46px; filter: drop-shadow(0 4px 10px rgba(45, 212, 191, .45)); transition: transform .35s cubic-bezier(.2, .7, .2, 1.4); }
+.fan-btn:hover .lab-orb { transform: scale(1.08) rotate(-6deg); }
+.fan.open .lab-orb { transform: rotate(135deg) scale(.95); }
+.lab-orbit { transform-origin: 24px 24px; animation: orbit 6s linear infinite; }
+.lab-nodes circle { animation: nodePulse 2.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.lab-nodes circle:nth-child(2) { animation-delay: .4s; } .lab-nodes circle:nth-child(3) { animation-delay: .8s; } .lab-nodes circle:nth-child(4) { animation-delay: 1.2s; } .lab-nodes circle:nth-child(5) { animation-delay: 1.6s; }
+.lab-spark { transform-box: fill-box; transform-origin: center; animation: sparkle 1.8s ease-in-out infinite; }
+@keyframes orbit { to { transform: rotate(360deg); } }
+@keyframes nodePulse { 50% { transform: scale(1.45); opacity: .7; } }
+@keyframes sparkle { 0%, 100% { transform: scale(.6) rotate(0); opacity: .4; } 50% { transform: scale(1.15) rotate(45deg); opacity: 1; } }
+.fan-lbl b { display: block; font-size: 14px; letter-spacing: .01em; } .fan-lbl small { display: block; font-size: 11px; color: #9be7dc; }
+.fan-items { position: absolute; left: 10px; bottom: 58px; width: 0; height: 0; z-index: 80; }
+.fan-item {
+  position: absolute; left: 0; bottom: 0; display: flex; align-items: center; gap: 8px; white-space: nowrap;
+  padding: 5px 14px 5px 5px; border-radius: 999px; border: 1px solid rgba(45, 212, 191, .45); background: #0b1726; color: #e6edf5;
+  font: 600 13px/1 "Segoe UI", system-ui, sans-serif; cursor: pointer; box-shadow: 0 10px 28px rgba(0, 0, 0, .45);
+  opacity: 0; pointer-events: none; transform: translate(0, 0) scale(.3); transform-origin: left bottom;
+  transition: transform .38s cubic-bezier(.2, .9, .3, 1.35), opacity .2s; transition-delay: calc(var(--i) * 50ms);
+}
+.fan-item i { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #14b8a6, #6d28d9); color: #fff; }
+.fan-item:hover { border-color: #2dd4bf; background: #10233a; }
+.fan-item:focus-visible { outline: 2px solid #2dd4bf; outline-offset: 2px; }
+.fan.open .fan-item { opacity: 1; pointer-events: auto; }
+.fan.open .fan-item[style*="--i:0"] { transform: translate(6px, -96px) rotate(-4deg) scale(1); }
+.fan.open .fan-item[style*="--i:1"] { transform: translate(26px, -46px) rotate(-1deg) scale(1); }
+html[dir="rtl"] .fan-items { left: auto; right: 10px; }
+html[dir="rtl"] .fan-item { left: auto; right: 0; transform-origin: right bottom; }
+html[dir="rtl"] .fan.open .fan-item[style*="--i:0"] { transform: translate(-6px, -96px) rotate(4deg) scale(1); }
+html[dir="rtl"] .fan.open .fan-item[style*="--i:1"] { transform: translate(-26px, -46px) rotate(1deg) scale(1); }
+@media (max-width: 900px) {
+  .fan { position: fixed; left: 14px; bottom: 14px; z-index: 90; margin: 0; padding: 0; }
+  .fan-btn { width: auto; padding: 5px; border-radius: 50%; background: #0b1726; }
+  .fan-lbl { display: none; }
+  html[dir="rtl"] .fan { left: auto; right: 14px; }
+  .tour-btn .tip { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .lab-orbit, .lab-nodes circle, .lab-spark { animation: none !important; } }
+body.locked .fan { display: none; }
+@media print { .fan, .um { display: none !important; } }
+@media (max-width: 600px) { #clock > span { display: none; } .top-actions { flex-wrap: nowrap; gap: 6px; } }

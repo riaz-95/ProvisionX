@@ -41,7 +41,7 @@
     events: [],
     stats: { screened: 184213, flags: 612, seizures: 97, far: 3.8, idMin: 4 },
     model: { v: [2, 3, 0], recall: 91.2, far: 3.8, library: 412, predicted: 38, early: 5 },
-    clock: new Date(2026, 10, 5, 9, 14, 0),
+    clock: NL.uaeNow(),
     caseSeq: 24130,
     currentCase: null,
     bagIdx: -1,
@@ -56,7 +56,8 @@
 
   function fmtTime(d) { return d.toTimeString().slice(0, 8); }
   function fmtHM(d) { return d.toTimeString().slice(0, 5); }
-  function tick(sec) { S.clock = new Date(S.clock.getTime() + sec * 1000); $('#clock').innerHTML = 'DXB local time <b>' + fmtHM(S.clock) + '</b>'; }
+  // Event timestamps follow the real current time in the UAE.
+  function tick() { var n = NL.uaeNow(); if (n > S.clock) S.clock = n; }
   function lvl(score) { return score >= 60 ? 'high' : score >= 45 ? 'mid' : 'low'; }
   function decisionText(score) {
     return score >= 60 ? 'Open bag · secondary inspection' : score >= 45 ? 'Re-scan at second angle' : 'Clear';
@@ -126,6 +127,7 @@
       sec.classList.remove('enter'); void sec.offsetWidth; sec.classList.add('enter');
     }
     if (screen === 'dashboard') countUpKpis();
+    var fan = document.getElementById('fan'); if (fan) fan.classList.toggle('active', screen === 'models' || screen === 'challenge');
     window.scrollTo(0, 0);
   }
 

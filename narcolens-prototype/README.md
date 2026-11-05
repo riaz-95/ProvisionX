@@ -25,7 +25,10 @@ A federated learning loop retrains every site after each lab-confirmed seizure. 
 
 ## How to test it (paste into Eureka)
 0. **Sign in** with the pre-filled demo account: officer ID `MOHAP-DC-0427`, password `demo`. Mariam Al Noor, MOHAP Pharmaceutical Control Inspector, is a fictional officer.
-1. New to the prototype? Press **Judge tour** (top right) for a 5-step guided tour of the things to try. Press **ع** to switch the whole interface to Arabic (right-to-left). Press **?** for keyboard shortcuts (N next bag, D demo, T tour, L language, M mute). Flagged bags trigger a sound and a vibration on phones.
+1. New to the prototype? Press **Take a Tour** (top right) for a 5-step guided tour of the things to try. The clock shows the current **UAE time** (GST, UTC+4).
+   - Click the **avatar with your initials** (top right) to open the user menu. It has **Language** (English ↔ Arabic, right-to-left), a **Dark mode** switch, **Keyboard shortcuts** and **Sign out**.
+   - Press **?** for keyboard shortcuts: N next bag, D demo, T tour, L language, G AI Lab.
+   - Flagged bags flash the scanner view and vibrate on phones.
 2. Press **▶ Run full demo** (top right). It plays one bag end to end in about 60 seconds, with captions: X-ray flag → case → officer photo → hyperspectral ID → seizure → federated retraining.
 3. Or explore each screen from the left menu:
    - **Command Dashboard:** click any entry point on the UAE map. It zooms in and shows site stats. *Open new case here* runs the live model on a fresh scan and opens the case.
@@ -39,11 +42,12 @@ A federated learning loop retrains every site after each lab-confirmed seizure. 
    - **Inspection Case (M5):** see the evidence timeline and how each module moves the fused score. Try *Open bag*, *Re-scan* or *Clear*. Open **What-if** and move the sliders to see how each piece of evidence changes the decision.
    - **Inspection Desk (M2):** press *Analyse photo*. The live model classifies every tablet crop, and a **forensic physical profile** measures diameter, shape and colour from the mm scale bar. *Mixed tablets* shows the model separating Captagon-style tablets from licensed-looking ones. Then use the **Imprint pad**: draw two crescents ( ), a line or a letter, or press *Random example*.
    - **Hyperspectral ID (M3):** press *Auto-scan*, then click any pixel to see its spectrum against the library. *Cut powder* shows unmixing of methamphetamine and caffeine. *Clean supplement* is a control sample.
-   - **Challenge · You vs AI:** 5 fresh random bags. Click where you think drugs are hidden, then compare with the model.
+   - **AI Lab** (the animated orb at the bottom left of the side menu, or press **G**): it fans out two items, *AI Models · live test* and *Challenge · You vs AI*.
+   - **Challenge · You vs AI** (AI Lab): 5 fresh random bags. Click where you think drugs are hidden, then compare with the model.
    - **Novel-Drug Predictor (M4):** press *Run prediction cycle*.
    - **Learning Loop:** an interactive federated-learning simulator. Click a site to train it locally or take it offline. Run rounds (or auto-run), set the privacy level, and switch on a *poisoned update* to see the core reject it. Watch the recall curve and the round log.
-   - **AI Models:** model cards with held-out test metrics. Press *Test on 40 brand-new random bags* to benchmark the model live.
-4. The theme button (top right) switches between light and dark mode. The layout works on mobile.
+   - **AI Models** (AI Lab): model cards with held-out test metrics. Press *Test on 40 brand-new random bags* to benchmark the model live.
+4. The layout works on mobile. There the AI Lab orb floats in the bottom-left corner.
 
 ## Files
 ```

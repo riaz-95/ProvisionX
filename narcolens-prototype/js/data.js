@@ -187,3 +187,12 @@ window.NL.officers = {
 window.NL.officer.role = 'officer';
 window.NL.officer.chip = 'MOHAP · DXB T3 Desk 2';
 window.NL.officer.title = 'Pharmaceutical Control Inspector';
+
+/* Current wall-clock time in the UAE (Asia/Dubai, UTC+4), as a local Date for display/timestamps. */
+window.NL.uaeNow = function () {
+  try {
+    var p = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Dubai', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).formatToParts(new Date());
+    var g = function (t) { return +p.find(function (x) { return x.type === t; }).value; };
+    return new Date(g('year'), g('month') - 1, g('day'), g('hour') % 24, g('minute'), g('second'));
+  } catch (e) { var n = new Date(); return new Date(n.getTime() + (n.getTimezoneOffset() + 240) * 60000); }
+};
