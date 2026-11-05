@@ -117,3 +117,90 @@
     }
   };
 })(window.NL);
+
+/* M2 imprint classes and a randomised tablet close-up renderer.
+   Used to generate the classifier's training set and to draw the imprint pad's base tablet. */
+(function (NL) {
+  'use strict';
+  NL.IMPRINT_CLASSES = [
+    { id: 'crescent', name: 'Twin-crescent (Captagon-style logo)', risk: true },
+    { id: 'plain', name: 'Plain tablet, no imprint', risk: false },
+    { id: 'scored', name: 'Score line (typical licensed medicine)', risk: false },
+    { id: 'letter', name: 'Letter / number stamp', risk: false }
+  ];
+  var TAB = ['#ece4d2', '#f5f5f0', '#f2e6c9', '#e8d7d7', '#dfe7f0', '#efe9da'];
+  var BG = ['#a99d8a', '#cfc6b8', '#6b6f76', '#3b3f46', '#d9d4cb', '#8c8f94', '#2b2f36'];
+  var GLYPHS = 'ABCDEFHKMPRTX0123456789';
+
+  NL.drawTabletCrop = function (ctx, S, cls, r, strokesFn) {
+    var c = document.createElement('canvas'); c.width = S; c.height = S;
+    var g = c.getContext('2d');
+    g.fillStyle = BG[Math.floor(r() * BG.length)]; g.fillRect(0, 0, S, S);
+    var cx = S / 2 + (r() - 0.5) * S * 0.12, cy = S / 2 + (r() - 0.5) * S * 0.12, rad = S * (0.33 + r() * 0.1);
+    g.beginPath(); g.arc(cx + 1.5, cy + 2, rad, 0, Math.PI * 2); g.fillStyle = 'rgba(0,0,0,0.25)'; g.fill();
+    var col = TAB[Math.floor(r() * TAB.length)];
+    var grd = g.createRadialGradient(cx - rad * 0.4, cy - rad * 0.4, rad * 0.1, cx, cy, rad * 1.1);
+    grd.addColorStop(0, '#ffffff'); grd.addColorStop(0.35, col); grd.addColorStop(1, shade(col, -28));
+    g.beginPath(); g.arc(cx, cy, rad, 0, Math.PI * 2); g.fillStyle = grd; g.fill();
+    g.lineWidth = Math.max(0.8, S / 40); g.strokeStyle = shade(col, -45); g.stroke();
+    g.save(); g.translate(cx, cy); g.rotate(r() * Math.PI * 2);
+    var ink = 'rgba(' + [110 + r() * 40, 100 + r() * 35, 80 + r() * 30].map(Math.round).join(',') + ',' + (0.6 + r() * 0.35).toFixed(2) + ')';
+    g.strokeStyle = ink; g.fillStyle = ink; g.lineCap = 'round';
+    g.lineWidth = S * (0.018 + r() * 0.035);
+    var j = function (v) { return v + (r() - 0.5) * rad * 0.22; };
+    if (strokesFn) strokesFn(g, rad);
+    else if (cls === 0) {
+      var gap = rad * (0.06 + r() * 0.14), h = rad * (0.42 + r() * 0.22), bulge = rad * (0.45 + r() * 0.35);
+      [-1, 1].forEach(function (sgn) {
+        g.beginPath(); g.moveTo(sgn * gap, -h); g.quadraticCurveTo(j(sgn * (gap + bulge)), j(0), sgn * gap, h); g.stroke();
+      });
+    } else if (cls === 2) {
+      var L = rad * (0.7 + r() * 0.25);
+      g.beginPath(); g.moveTo(-L, j(0) * 0.3); g.lineTo(L, j(0) * 0.3); g.stroke();
+    } else if (cls === 3) {
+      var txt = GLYPHS[Math.floor(r() * GLYPHS.length)] + (r() < 0.4 ? GLYPHS[Math.floor(r() * GLYPHS.length)] : '');
+      g.font = '700 ' + Math.round(rad * (txt.length > 1 ? 0.8 : 1.05)) + 'px Arial, sans-serif';
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      if (r() < 0.5) g.fillText(txt, 0, rad * 0.04); else { g.lineWidth = Math.max(0.8, g.lineWidth * 0.7); g.strokeText(txt, 0, rad * 0.04); }
+    }
+    g.restore();
+    ctx.save();
+    ctx.filter = 'blur(' + (r() * 0.9).toFixed(2) + 'px)';
+    ctx.drawImage(c, 0, 0);
+    ctx.restore();
+    var img = ctx.getImageData(0, 0, S, S), d = img.data, amp = 3 + r() * 10, bri = (r() - 0.5) * 40, con = 0.8 + r() * 0.4;
+    for (var i = 0; i < d.length; i += 4) {
+      var n = (r() - 0.5) * amp * 2;
+      for (var k = 0; k < 3; k++) d[i + k] = Math.max(0, Math.min(255, (d[i + k] - 128) * con + 128 + bri + n));
+    }
+    ctx.putImageData(img, 0, 0);
+  };
+  function shade(hex, amt) {
+    var n = parseInt(hex.slice(1), 16);
+    var rr = Math.max(0, Math.min(255, (n >> 16) + amt)), gg = Math.max(0, Math.min(255, ((n >> 8) & 255) + amt)), bb = Math.max(0, Math.min(255, (n & 255) + amt));
+    return 'rgb(' + rr + ',' + gg + ',' + bb + ')';
+  }
+})(window.NL);
+
+/* Tablet locations in each officer photo (crop centres + radius), and a det-free SVG for rasterising. */
+(function (NL) {
+  'use strict';
+  var tub = [];
+  for (var i = 0; i < 12; i++) tub.push([338 + (i % 4) * 30, 178 + Math.floor(i / 4) * 30, 11]);
+  NL.deskSamples['protein-tub'].tablets = tub;
+  NL.deskSamples['pill-strip'].tablets = [[120, 150], [160, 140], [200, 158], [140, 190], [182, 196], [222, 190], [110, 228], [152, 236], [196, 230], [236, 226], [130, 270], [176, 274], [216, 266]].map(function (p) { return [p[0], p[1], 16]; });
+  NL.deskSamples['peptide-vial'].tablets = [];
+  NL.rasterPhoto = function (sample) {
+    return new Promise(function (resolve, reject) {
+      var svg = sample.svg().replace(/<g class="det">[\s\S]*?<\/g>/g, '');
+      var img = new Image();
+      img.onload = function () {
+        var c = document.createElement('canvas'); c.width = 520; c.height = 340;
+        c.getContext('2d').drawImage(img, 0, 0, 520, 340);
+        resolve(c);
+      };
+      img.onerror = reject;
+      img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    });
+  };
+})(window.NL);

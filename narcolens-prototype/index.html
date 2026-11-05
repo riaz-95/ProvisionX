@@ -31,6 +31,7 @@
         <a href="#hyper" data-screen="hyper"><span class="num">M3</span><span>Hyperspectral ID</span></a>
         <a href="#predict" data-screen="predict"><span class="num">M4</span><span>Novel-Drug Predictor</span></a>
         <a href="#learn" data-screen="learn"><span class="num">07</span><span>Learning Loop</span></a>
+        <a href="#models" data-screen="models"><span class="num">AI</span><span>AI Models &middot; live test</span></a>
       </nav>
       <div class="sidebar-foot">
         <span>Sovereign &middot; on-prem</span>
@@ -44,6 +45,7 @@
         <div class="titles">
           <h1 id="screenTitle">Command Dashboard</h1>
           <p id="screenSub"></p>
+          <div class="badges" id="badges"></div>
         </div>
         <div class="top-actions">
           <span class="clock" id="clock" title="Simulated clock"></span>
@@ -94,12 +96,30 @@
 
       <!-- M1 LANE -->
       <section class="screen" id="screen-lane" hidden>
+        <div class="mode-tabs" id="laneModes" role="tablist">
+          <button type="button" data-mode="belt" class="active">Belt &middot; demo bags</button>
+          <button type="button" data-mode="build">Build your own bag</button>
+          <button type="button" data-mode="upload">Upload a scan</button>
+        </div>
         <div class="bag-strip" id="bagStrip" aria-label="Bags on the belt"></div>
+        <div class="builder card" id="builder" hidden>
+          <div class="palette" id="palClutter"><span class="pal-lbl">Add everyday items</span></div>
+          <div class="palette" id="palHide"><span class="pal-lbl">Hide drugs</span></div>
+          <div class="row">
+            <button class="btn" id="bRandom" type="button">Randomise bag</button>
+            <button class="btn" id="bClear" type="button">Empty bag</button>
+            <span class="muted small">Drag items to move them. The AI only sees pixels &ndash; never item names.</span>
+          </div>
+        </div>
+        <div class="upload card" id="uploadBox" hidden>
+          <label class="btn primary">Choose an image&hellip;<input type="file" id="uploadInput" accept="image/*" hidden></label>
+          <span class="muted small">Experimental: the model was trained on synthetic dual-energy scans, so real X-ray photos are outside its training data. Results are shown as-is.</span>
+        </div>
         <div class="grid-lane">
           <div class="card">
             <div class="card-h">
               <h3>X-ray &middot; <span id="laneTag">select a bag</span></h3>
-              <label class="switch"><input type="checkbox" id="overlayToggle" checked> AI overlay</label>
+              <span class="switches"><label class="switch"><input type="checkbox" id="overlayToggle" checked> AI heatmap</label><label class="switch" id="truthWrap"><input type="checkbox" id="truthToggle"> Ground truth</label></span>
             </div>
             <div class="xray-wrap">
               <canvas id="xray" width="760" height="440" aria-label="Simulated dual-energy X-ray image"></canvas>
@@ -108,7 +128,8 @@
             <div class="row">
               <button class="btn primary" id="scanNext" type="button">Scan next bag</button>
               <button class="btn" id="laneAuto" type="button">Auto belt: off</button>
-              <span class="muted small">Edge-box inference: <b id="latency">&ndash;</b></span>
+              <button class="btn primary" id="bScan" type="button" hidden>Scan with AI</button>
+              <span class="muted small">M1 model inference in this browser: <b id="latency">&ndash;</b></span>
             </div>
           </div>
           <div class="card" id="laneResult"></div>
@@ -145,6 +166,27 @@
             </div>
           </div>
           <div class="card" id="deskResult"></div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-h"><h3>Tablets in this photo &rarr; M2 imprint model</h3><span class="badge live">Live model</span></div>
+            <div class="crops" id="crops"><p class="muted small">Press <b>Analyse photo</b> to classify every tablet crop.</p></div>
+          </div>
+          <div class="card">
+            <div class="card-h"><h3>Imprint pad &middot; test the model yourself</h3><span class="badge live">Live model</span></div>
+            <div class="pad-wrap">
+              <canvas id="pad" width="240" height="240" aria-label="Draw a tablet imprint"></canvas>
+              <div class="pad-side">
+                <p class="muted small">Draw an imprint on the tablet with your mouse or finger &ndash; e.g. two crescents <b>( )</b>, a line, or a letter.</p>
+                <div id="padResult"></div>
+                <div class="row">
+                  <button class="btn" id="padClear" type="button">Clear</button>
+                  <button class="btn" id="padRandom" type="button">Random example</button>
+                  <label class="btn">Upload close-up<input type="file" id="padUpload" accept="image/*" hidden></label>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -218,6 +260,14 @@
           </div>
         </div>
       </section>
+      <!-- AI MODELS -->
+      <section class="screen" id="screen-models" hidden>
+        <div class="grid-2 even">
+          <div class="card" id="cardM1"></div>
+          <div class="card" id="cardM2"></div>
+        </div>
+        <div class="card" id="cardOthers"></div>
+      </section>
     </main>
   </div>
 
@@ -228,6 +278,8 @@
 
   <script src="js/data.js"></script>
   <script src="js/xray.js"></script>
+  <script src="js/nn.js"></script>
+  <script src="js/models/models.js"></script>
   <script src="js/pills.js"></script>
   <script src="js/hyperspectral.js"></script>
   <script src="js/app.js"></script>

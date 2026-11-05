@@ -12,7 +12,18 @@
     desk: { title: 'Inspection Desk · M2 Pills, Vials & Labels', sub: 'The officer photographs what is found. AI reads pill imprints, vials and Arabic / English labels, and checks them against the product registry.' },
     hyper: { title: 'Hyperspectral ID · M3 Substance Identification', sub: 'A hyperspectral camera sees chemistry through packaging. AI matches every pixel\'s spectrum to the drug library – without opening the pouch.' },
     predict: { title: 'Novel-Drug Predictor · M4', sub: 'Predicts the spectral fingerprint of new synthetic-drug variants before they are ever seized, and pushes them into the M3 library.' },
-    learn: { title: 'Learning Loop · Federated Retraining', sub: 'Every confirmed seizure makes every site smarter. Models train locally; only model updates – never raw images – leave a site.' }
+    learn: { title: 'Learning Loop · Federated Retraining', sub: 'Every confirmed seizure makes every site smarter. Models train locally; only model updates – never raw images – leave a site.' },
+    models: { title: 'AI Models · Live Test', sub: 'The trained models behind M1 and M2, their held-out test results, and buttons to test them on brand-new data right now – in this browser.' }
+  };
+  var BADGES = {
+    dashboard: [['sim', 'Simulated network data']],
+    lane: [['live', 'M1 trained CNN · running in this browser'], ['algo', 'Fusion · live formula']],
+    'case': [['algo', 'M5 fusion · live formula'], ['live', 'Evidence from live M1 / M2 / M3']],
+    desk: [['live', 'M2 imprint CNN · live'], ['sim', 'Packaging detection & OCR · simulated']],
+    hyper: [['algo', 'Spectral matching + unmixing · live'], ['sim', 'Camera spectra · simulated']],
+    predict: [['sim', 'M4 predictions · simulated']],
+    learn: [['sim', 'Federated round · illustration']],
+    models: [['live', 'Benchmarks run live in this browser']]
   };
 
   // ---------------- state ----------------
@@ -95,6 +106,7 @@
     $$('#nav a').forEach(function (a) { a.classList.toggle('active', a.dataset.screen === screen); });
     $('#screenTitle').textContent = SCREENS[screen].title;
     $('#screenSub').textContent = SCREENS[screen].sub;
+    $('#badges').innerHTML = (BADGES[screen] || []).map(function (b) { return '<span class="badge ' + b[0] + '">' + esc(b[1]) + '</span>'; }).join('');
     if (location.hash !== '#' + screen) history.replaceState(null, '', '#' + screen);
     var r = RENDER[screen];
     if (r) r();
@@ -157,6 +169,12 @@
   function renderDashboard() { renderKpis(); renderQueue(); renderLog(); }
 
   // ---------------- M1 lane ----------------
+  S.laneMode = 'belt';
+  S.build = null;
+  S.buildRes = null;
+  NL.bags.forEach(function (b) { b.scene = NL.demoScene(b.concealment, b.seed); });
+  function m1Params() { var m = NL.MODEL_METRICS && NL.MODEL_METRICS.m1; return m ? m.params.toLocaleString('en-US') : '–'; }
+
   function renderBagStrip() {
     $('#bagStrip').innerHTML = NL.bags.map(function (b, i) {
       var st = S.bagStatus[b.tag] || '';
@@ -164,30 +182,46 @@
     }).join('');
   }
 
+  function m1Text(res) {
+    if (!res) return 'Model not loaded.';
+    if (!res.boxes.length) return 'No region above 50% concealment probability. Densities look consistent with normal packing.';
+    var b = res.boxes[0];
+    return res.boxes.length + ' region' + (res.boxes.length > 1 ? 's' : '') + ' with concealment-like density; strongest ' + b.score + '/100, covering ' + (b.px / (112 * 64) * 100).toFixed(1) + '% of the scan.';
+  }
+  function m1Label(res) { return res && res.boxes.length ? 'Concealment-like density (' + res.boxes.length + ' region' + (res.boxes.length > 1 ? 's' : '') + ')' : 'No anomaly'; }
+  function truthLabels(scene) {
+    return scene.items.filter(function (it) { return NL.xrayItems[it.type].positive; }).map(function (it) { return NL.xrayItems[it.type].label.toLowerCase(); }).join(', ');
+  }
+  function truthHtml(L) {
+    if (L.truth == null) return '<div class="truth">No ground truth for uploaded images &ndash; judge the heatmap yourself.</div>';
+    var flagged = L.m1 >= 50, ok = flagged === L.truth;
+    return '<div class="truth">Ground truth (hidden from the AI): <b>' + (L.truth ? 'drugs hidden &ndash; ' + esc(L.truthLabel) : 'clean bag') + '</b><br>AI ' + (flagged ? 'flagged it' : 'did not flag it') + ' &rarr; <b class="' + (ok ? 'ok' : 'bad') + '">' + (ok ? '✓ correct' : '✗ wrong') + '</b></div>';
+  }
+
   function renderLaneResult() {
-    var el = $('#laneResult');
-    var L = S.lastLane;
+    var el = $('#laneResult'), L = S.lastLane;
     if (!L) {
-      el.innerHTML = '<div class="placeholder">Pick a bag on the belt or press <b>Scan next bag</b>.<br><br>M1 runs on an edge GPU box beside the existing scanner – no new X-ray hardware.</div>';
+      el.innerHTML = '<div class="placeholder">' + ({
+        belt: 'Pick a bag on the belt or press <b>Scan next bag</b>.<br><br>M1 is a trained neural network (' + m1Params() + ' parameters) running right here in your browser.',
+        build: 'Add items, hide drugs anywhere, drag things around &ndash; then press <b>Scan with AI</b>.<br><br>The model has never seen your bag.',
+        upload: 'Upload any image. M1 will produce a concealment heatmap for it.'
+      })[S.laneMode] + '</div>';
       return;
     }
-    if (L.scanning) {
-      el.innerHTML = '<div class="placeholder"><span class="spinner"></span>Bag ' + L.bag.tag + ' passing the scanner&hellip;</div>';
-      return;
-    }
-    var b = L.bag, m = NL.concealments[b.concealment], sc = L.fused, l = lvl(sc);
-    var fhtml = L.findings.length ? L.findings.map(function (f) {
-      return '<div class="finding ' + (f.level === 'low' ? 'low' : '') + '"><b>' + esc(f.label) + '</b> · M1 score ' + f.score + '<br>' + esc(m.text) + '</div>';
-    }).join('') : '<div class="finding none"><b>No anomaly</b><br>' + esc(m.text) + '</div>';
+    if (L.scanning) { el.innerHTML = '<div class="placeholder"><span class="spinner"></span>Scanning&hellip;</div>'; return; }
+    var sc = L.fused, l = lvl(sc), b = L.bag;
+    var findings = L.res && L.res.boxes.length ? L.res.boxes.slice(0, 3).map(function (f, i) {
+      return '<div class="finding ' + (f.score < 60 ? 'low' : '') + '"><b>Region ' + (i + 1) + '</b> · concealment probability ' + f.score + '/100 · ' + (f.px / (112 * 64) * 100).toFixed(1) + '% of scan area</div>';
+    }).join('') : '<div class="finding none"><b>No anomaly</b><br>' + esc(m1Text(L.res)) + '</div>';
     el.innerHTML =
-      '<div class="result-h"><h3>Lane decision</h3><span class="pill ' + l + '">' + (l === 'high' ? 'FLAGGED' : l === 'mid' ? 'RE-SCAN' : 'CLEAR') + '</span></div>' +
-      '<div class="score-big"><span class="n lvl-' + l + '">' + sc + '</span><span class="of">/ 100 fused risk</span></div>' +
+      '<div class="result-h"><h3>' + (b ? 'Lane decision' : L.kind === 'build' ? 'AI result · your bag' : 'AI result · uploaded image') + '</h3><span class="pill ' + l + '">' + (l === 'high' ? 'FLAGGED' : l === 'mid' ? 'RE-SCAN' : 'CLEAR') + '</span></div>' +
+      '<div class="score-big"><span class="n lvl-' + l + '">' + sc + '</span><span class="of">/ 100 ' + (b ? 'fused risk' : 'M1 score') + '</span></div>' +
       '<div class="meter"><i class="bg-' + l + '" style="width:' + sc + '%"></i></div>' +
-      '<dl class="kv"><dt>Bag tag</dt><dd><b>' + b.tag + '</b></dd><dt>Lane</dt><dd>DXB ' + esc(b.lane) + '</dd><dt>Route</dt><dd>' + esc(b.route) + '</dd>' +
-      '<dt>Pre-arrival</dt><dd>' + b.preScore + ' · ' + esc(b.preText) + '</dd><dt>M1 X-ray</dt><dd>' + m.m1 + '</dd></dl>' +
-      fhtml +
-      '<div class="decision ' + l + '"><span>' + decisionText(sc) + '</span>' +
-      (L.caseId ? '<button class="btn primary" data-open-case="' + L.caseId + '">Open case ' + L.caseId + ' &rarr;</button>' : '') + '</div>';
+      (b ? '<dl class="kv"><dt>Bag tag</dt><dd><b>' + b.tag + '</b></dd><dt>Route</dt><dd>' + esc(b.route) + '</dd>' +
+        '<dt>Pre-arrival</dt><dd>' + b.preScore + ' · ' + esc(b.preText) + '</dd><dt>M1 model</dt><dd><b>' + L.m1 + '</b> / 100</dd></dl>' : '') +
+      findings + truthHtml(L) +
+      (b ? '<div class="decision ' + l + '"><span>' + decisionText(sc) + '</span>' + (L.caseId ? '<button class="btn primary" data-open-case="' + L.caseId + '">Open case ' + L.caseId + ' &rarr;</button>' : '') + '</div>' : '') +
+      '<p class="muted small">M1 · trained CNN, ' + m1Params() + ' parameters · ' + (L.res ? L.res.ms.toFixed(0) : '–') + ' ms in this browser · no server, no internet</p>';
   }
 
   function selectBag(i, done) {
@@ -197,35 +231,31 @@
     $('#laneTag').textContent = b.tag;
     renderBagStrip(); renderLaneResult();
     $('#latency').textContent = '…';
-    NL.scanBag($('#xray'), b, {
-      onDone: function (findings) {
-        var m = NL.concealments[b.concealment];
-        var tmp = { evidence: { pre: { score: b.preScore }, m1: { score: m.m1 } } };
-        var fused = fuse(tmp).score;
-        var caseId = null;
+    NL.scanScene($('#xray'), b.scene, {
+      onDone: function (res) {
+        var m1s = res ? res.score : 0;
+        var tmp = { evidence: { pre: { score: b.preScore }, m1: { score: m1s } } };
+        var fused = fuse(tmp).score, caseId = null;
         S.stats.screened += 1;
         if (fused >= 60) {
           var c = caseByTag(b.tag);
           if (!c) {
-            c = newCase({ tag: b.tag, site: b.site, lane: 'DXB ' + b.lane, route: b.route, preScore: b.preScore, preText: b.preText, m1: { score: m.m1, label: m.label, text: m.text } });
+            c = newCase({ tag: b.tag, site: b.site, lane: 'DXB ' + b.lane, route: b.route, preScore: b.preScore, preText: b.preText, m1: { score: m1s, label: m1Label(res), text: m1Text(res) } });
             S.stats.flags += 1;
-            log('DXB', 'AI flag · ' + b.tag + ' · ' + m.label + ' (score ' + fused + ') → case ' + c.id, 'danger');
+            log('DXB', 'AI flag · ' + b.tag + ' · M1 model ' + m1s + ' → fused ' + fused + ' → case ' + c.id, 'danger');
           }
-          caseId = c.id;
-          S.currentCase = c.id;
-          S.bagStatus[b.tag] = 'flagged';
+          caseId = c.id; S.currentCase = c.id; S.bagStatus[b.tag] = 'flagged';
         } else {
           S.bagStatus[b.tag] = 'cleared';
-          log('DXB', b.tag + ' cleared (score ' + fused + ')', 'ok');
+          log('DXB', b.tag + ' cleared (M1 ' + m1s + ', fused ' + fused + ')', 'ok');
         }
-        $('#latency').textContent = (0.32 + ((b.seed * 7) % 17) / 100).toFixed(2) + ' s';
-        S.lastLane = { bag: b, findings: findings, fused: fused, caseId: caseId };
+        $('#latency').textContent = res ? res.ms.toFixed(0) + ' ms' : 'n/a';
+        S.lastLane = { bag: b, res: res, m1: m1s, fused: fused, caseId: caseId, truth: NL.sceneHasConcealment(b.scene), truthLabel: truthLabels(b.scene) };
         renderBagStrip(); renderLaneResult();
         if (done) done();
       }
     });
   }
-
   function scanNext() { selectBag((S.bagIdx + 1) % NL.bags.length); }
   function toggleAuto() {
     if (S.autoBelt) { clearInterval(S.autoBelt); S.autoBelt = null; }
@@ -233,17 +263,129 @@
     $('#laneAuto').textContent = 'Auto belt: ' + (S.autoBelt ? 'on' : 'off');
   }
 
+  // ----- Bag Builder -----
+  function emptyScene() { return { seed: Math.floor(Math.random() * 1e9), bg: 246, noise: 6, handle: 'left', items: [] }; }
+  function drawBuild() {
+    var cv = $('#xray');
+    cv.width = NL.XRAY.W; cv.height = NL.XRAY.H;
+    var off = document.createElement('canvas'); off.width = NL.XRAY.W; off.height = NL.XRAY.H;
+    var mask = document.createElement('canvas'); mask.width = NL.XRAY.W; mask.height = NL.XRAY.H;
+    NL.renderScene(S.build, off.getContext('2d'), mask.getContext('2d'));
+    cv._off = off; cv._mask = mask; cv._res = S.buildRes;
+    NL.redrawXray(cv);
+    if (S.dragIdx != null) {
+      var it = S.build.items[S.dragIdx], ctx = cv.getContext('2d');
+      ctx.save(); ctx.translate(it.x, it.y); ctx.rotate(it.rot || 0);
+      ctx.setLineDash([5, 4]); ctx.strokeStyle = '#2dd4bf'; ctx.lineWidth = 2; ctx.strokeRect(-it.w / 2 - 4, -it.h / 2 - 4, it.w + 8, it.h + 8);
+      ctx.restore();
+    }
+  }
+  function buildEdited() { S.buildRes = null; S.lastLane = null; $('#laneTag').textContent = 'your bag (not scanned yet)'; renderLaneResult(); drawBuild(); }
+  function canvasPt(ev) {
+    var cv = $('#xray'), r = cv.getBoundingClientRect();
+    return { x: (ev.clientX - r.left) / r.width * NL.XRAY.W, y: (ev.clientY - r.top) / r.height * NL.XRAY.H };
+  }
+  function hitItem(p) {
+    for (var i = S.build.items.length - 1; i >= 0; i--) {
+      var it = S.build.items[i], dx = p.x - it.x, dy = p.y - it.y, a = -(it.rot || 0);
+      var lx = dx * Math.cos(a) - dy * Math.sin(a), ly = dx * Math.sin(a) + dy * Math.cos(a);
+      if (Math.abs(lx) <= it.w / 2 + 4 && Math.abs(ly) <= it.h / 2 + 4) return i;
+    }
+    return null;
+  }
+  function initBuilder() {
+    $('#palClutter').insertAdjacentHTML('beforeend', NL.CLUTTER.map(function (t) { return '<button type="button" data-add="' + t + '">+ ' + NL.xrayItems[t].label + '</button>'; }).join(''));
+    $('#palHide').insertAdjacentHTML('beforeend', NL.CONCEALMENTS.map(function (t) { return '<button type="button" class="hide" data-add="' + t + '">+ ' + NL.xrayItems[t].label + '</button>'; }).join(''));
+    $('#builder').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-add]');
+      if (!b) return;
+      S.build.items.push(NL.placeItem(b.dataset.add, Math.random));
+      buildEdited();
+    });
+    $('#bRandom').addEventListener('click', function () { S.build = NL.randomScene(Math.floor(Math.random() * 1e9)); buildEdited(); });
+    $('#bClear').addEventListener('click', function () { S.build = emptyScene(); buildEdited(); });
+    $('#bScan').addEventListener('click', scanBuild);
+    var cv = $('#xray');
+    cv.addEventListener('pointerdown', function (e) {
+      if (S.laneMode !== 'build') return;
+      var p = canvasPt(e), i = hitItem(p);
+      if (i == null) return;
+      var it = S.build.items.splice(i, 1)[0]; S.build.items.push(it); // bring to front
+      S.dragIdx = S.build.items.length - 1; S.dragOff = { x: p.x - it.x, y: p.y - it.y };
+      cv.setPointerCapture(e.pointerId); e.preventDefault();
+      buildEdited();
+    });
+    cv.addEventListener('pointermove', function (e) {
+      if (S.laneMode !== 'build' || S.dragIdx == null) return;
+      var p = canvasPt(e), it = S.build.items[S.dragIdx];
+      it.x = Math.max(40, Math.min(NL.XRAY.W - 40, p.x - S.dragOff.x)); it.y = Math.max(30, Math.min(NL.XRAY.H - 30, p.y - S.dragOff.y));
+      drawBuild();
+    });
+    var end = function () { if (S.dragIdx != null) { S.dragIdx = null; drawBuild(); } };
+    cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
+    $('#uploadInput').addEventListener('change', function () {
+      var f = this.files && this.files[0];
+      if (!f) return;
+      var img = new Image();
+      img.onload = function () { scanUpload(img); };
+      img.src = URL.createObjectURL(f);
+      this.value = '';
+    });
+  }
+  function scanBuild() {
+    return new Promise(function (resolve) {
+      S.lastLane = { scanning: true, kind: 'build' }; renderLaneResult();
+      $('#laneTag').textContent = 'your bag';
+      NL.scanScene($('#xray'), S.build, {
+        onDone: function (res) {
+          S.buildRes = res;
+          S.lastLane = { kind: 'build', res: res, m1: res ? res.score : 0, fused: res ? res.score : 0, truth: NL.sceneHasConcealment(S.build), truthLabel: truthLabels(S.build) };
+          $('#latency').textContent = res ? res.ms.toFixed(0) + ' ms' : 'n/a';
+          renderLaneResult(); resolve(res);
+        }
+      });
+    });
+  }
+  function scanUpload(img) {
+    S.lastLane = { scanning: true, kind: 'upload' }; renderLaneResult();
+    $('#laneTag').textContent = 'uploaded image';
+    NL.scanScene($('#xray'), { image: img }, {
+      onDone: function (res) {
+        S.lastLane = { kind: 'upload', res: res, m1: res ? res.score : 0, fused: res ? res.score : 0, truth: null };
+        $('#latency').textContent = res ? res.ms.toFixed(0) + ' ms' : 'n/a';
+        renderLaneResult();
+      }
+    });
+  }
+  function setLaneMode(m) {
+    S.laneMode = m;
+    $$('#laneModes button').forEach(function (b) { b.classList.toggle('active', b.dataset.mode === m); });
+    $('#bagStrip').hidden = m !== 'belt'; $('#builder').hidden = m !== 'build'; $('#uploadBox').hidden = m !== 'upload';
+    $('#scanNext').hidden = $('#laneAuto').hidden = m !== 'belt'; $('#bScan').hidden = m !== 'build';
+    $('#truthWrap').hidden = m === 'upload';
+    $('#xray').classList.toggle('building', m === 'build');
+    if (m !== 'belt' && S.autoBelt) toggleAuto();
+    S.lastLane = null;
+    if (m === 'build') { if (!S.build) S.build = NL.randomScene(424242, { positives: 1 }); S.buildRes = null; $('#laneTag').textContent = 'your bag (not scanned yet)'; drawBuild(); }
+    else if (m === 'upload') { $('#laneTag').textContent = 'upload'; drawIdleXray('Choose an image to scan'); }
+    else if (S.bagIdx >= 0) selectBag(S.bagIdx);
+    else { $('#laneTag').textContent = 'select a bag'; drawIdleXray(); }
+    renderLaneResult();
+  }
+
   function renderLane() {
     renderBagStrip();
     renderLaneResult();
-    if (S.bagIdx >= 0 && !$('#xray')._off) NL.scanBag($('#xray'), NL.bags[S.bagIdx], { fast: true });
-    if (S.bagIdx < 0) drawIdleXray();
+    if (S.laneMode === 'build') { drawBuild(); return; }
+    if (S.laneMode === 'belt' && S.bagIdx >= 0 && !$('#xray')._off) NL.scanScene($('#xray'), NL.bags[S.bagIdx].scene, { fast: true });
+    if (S.laneMode === 'belt' && S.bagIdx < 0) drawIdleXray();
   }
-  function drawIdleXray() {
+  function drawIdleXray(msg) {
     var cv = $('#xray'), ctx = cv.getContext('2d');
+    cv._off = null; cv._res = null;
     ctx.fillStyle = '#1b1f24'; ctx.fillRect(0, 0, cv.width, cv.height);
     ctx.fillStyle = '#8fa1b6'; ctx.font = '600 18px "Segoe UI", system-ui, sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText('Waiting for next bag on the belt…', cv.width / 2, cv.height / 2);
+    ctx.fillText(msg || 'Waiting for next bag on the belt…', cv.width / 2, cv.height / 2);
     ctx.textAlign = 'start';
   }
 
@@ -320,6 +462,25 @@
   }
 
   // ---------------- M2 desk ----------------
+  var LABEL_SCORE = { 'protein-tub': 60, 'pill-strip': 0, 'peptide-vial': 74 };
+  S.crops = null;
+  function imprintSummary() {
+    var cr = S.crops || [];
+    if (!cr.length) return null;
+    var hits = cr.filter(function (c) { return c.res.top === 0; });
+    var avg = hits.length ? hits.reduce(function (a, c) { return a + c.res.probs[0]; }, 0) / hits.length : 0;
+    return { n: cr.length, hits: hits.length, avg: avg, score: hits.length / cr.length >= 0.5 ? Math.round(avg * 95) : Math.round(hits.length / cr.length * 50) };
+  }
+  function deskScore() {
+    var im = imprintSummary();
+    return Math.max(LABEL_SCORE[S.deskSample] || 0, im ? im.score : 0);
+  }
+  function deskSummary() {
+    var s = NL.deskSamples[S.deskSample], im = imprintSummary(), parts = [];
+    if (im) parts.push(im.hits + '/' + im.n + ' tablets classified Captagon-style (avg ' + Math.round(im.avg * 100) + '%)');
+    if (!s.registry.ok) parts.push(S.deskSample === 'peptide-vial' ? 'unregistered injectable peptide' : 'label not in registry');
+    return parts.join(' + ');
+  }
   function renderDesk() {
     $('#samplePick').innerHTML = Object.keys(NL.deskSamples).map(function (k) {
       return '<button data-sample="' + k + '" class="' + (k === S.deskSample ? 'active' : '') + '">' + NL.deskSamples[k].name + '</button>';
@@ -332,36 +493,111 @@
     var attachBtn = $('#deskAttach');
     attachBtn.disabled = !S.deskAnalysed || !c;
     attachBtn.textContent = c ? 'Attach to case ' + c.id : 'Attach to case';
+    renderCrops();
     var el = $('#deskResult');
     if (!S.deskAnalysed) {
-      el.innerHTML = '<div class="placeholder">Press <b>Analyse photo</b>. M2 detects pills, vials and packaging, reads imprints, and runs Arabic / English OCR on labels.</div>';
+      el.innerHTML = '<div class="placeholder">Press <b>Analyse photo</b>. The live M2 model classifies every tablet imprint; packaging detection and Arabic / English OCR are simulated in this prototype.</div>';
       return;
     }
+    var im = imprintSummary(), sc = deskScore();
     el.innerHTML =
-      '<div class="result-h"><h3>M2 result</h3><span class="pill high">Evidence score ' + s.score + '</span></div>' +
-      '<p><b>' + esc(s.summary) + '</b></p>' +
-      '<ul class="det-list">' + s.detections.map(function (d) {
-        return '<li><b>' + d.id + '</b> · ' + esc(d.label) + ' <span class="muted">(' + d.conf + '%)</span><div class="conf"><i style="width:' + d.conf + '%"></i></div></li>';
-      }).join('') + '</ul>' +
-      '<div class="ocr"><div class="muted small">OCR · label text</div>' + s.ocr.map(function (o) {
+      '<div class="result-h"><h3>M2 result</h3><span class="pill ' + lvl(sc) + '">Evidence score ' + sc + '</span></div>' +
+      '<p><b>' + esc(deskSummary()) + '</b></p>' +
+      (im ? '<div class="finding ' + (im.hits ? '' : 'none') + '"><span class="badge live">Live model</span> <b>Imprints:</b> ' + im.hits + ' of ' + im.n + ' tablets → twin-crescent (Captagon-style logo family), mean confidence ' + Math.round(im.avg * 100) + '%</div>' : '<div class="finding none"><span class="badge live">Live model</span> No tablets in this photo, so the imprint model is not used.</div>') +
+      '<div class="ocr"><div class="muted small"><span class="badge sim">Simulated</span> Packaging detection &amp; OCR</div>' + s.ocr.map(function (o) {
         return '<div><span class="lang">' + o.lang + '</span><span' + (o.rtl ? ' dir="rtl" lang="ar"' : '') + '>' + esc(o.text) + '</span></div>';
       }).join('') + '</div>' +
       '<div class="registry ' + (s.registry.ok ? 'pass' : 'fail') + '">' + esc(s.registry.text) + '</div>';
   }
-  function analyseDesk() {
-    return new Promise(function (resolve) {
-      $('#deskResult').innerHTML = '<div class="placeholder"><span class="spinner"></span>Running detection, imprint matching and OCR&hellip;</div>';
-      setTimeout(function () { S.deskAnalysed = true; renderDesk(); resolve(); }, 900);
+  function renderCrops() {
+    var el = $('#crops');
+    if (!S.deskAnalysed || !S.crops) { el.innerHTML = '<p class="muted small">Press <b>Analyse photo</b> to classify every tablet crop with the live model.</p>'; return; }
+    if (!S.crops.length) { el.innerHTML = '<p class="muted small">No tablets in this photo.</p>'; return; }
+    el.innerHTML = '';
+    S.crops.forEach(function (c) {
+      var d = document.createElement('div'), cls = NL.IMPRINT_CLASSES[c.res.top];
+      d.className = 'crop' + (cls.risk ? ' risk' : '');
+      var cv = document.createElement('canvas'); cv.width = 48; cv.height = 48;
+      cv.getContext('2d').drawImage(c.canvas, 0, 0);
+      d.appendChild(cv);
+      d.insertAdjacentHTML('beforeend', '<b>' + (cls.risk ? 'Twin-crescent' : cls.id === 'plain' ? 'Plain' : cls.id === 'scored' ? 'Score line' : 'Letter stamp') + '</b>' + Math.round(c.res.probs[c.res.top] * 100) + '%');
+      el.appendChild(d);
     });
+  }
+  function analyseDesk() {
+    $('#deskResult').innerHTML = '<div class="placeholder"><span class="spinner"></span>Classifying tablet imprints with the M2 model&hellip;</div>';
+    var s = NL.deskSamples[S.deskSample];
+    return NL.rasterPhoto(s).then(function (photo) {
+      S.crops = s.tablets.map(function (t) {
+        var side = t[2] * 2.6, x = t[0] - side / 2, y = t[1] - side / 2;
+        var cc = document.createElement('canvas'); cc.width = 48; cc.height = 48;
+        cc.getContext('2d').drawImage(photo, x, y, side, side, 0, 0, 48, 48);
+        return { canvas: cc, res: NL.m2.run(photo, x, y, side, side) };
+      });
+      return new Promise(function (r) { setTimeout(r, 350); });
+    }).then(function () { S.deskAnalysed = true; renderDesk(); });
   }
   function attachDesk() {
     var c = current(), s = NL.deskSamples[S.deskSample];
     if (!c || !S.deskAnalysed) return;
-    c.evidence.m2 = { score: s.score, text: s.summary };
-    addTimeline(c, 'M2', s.summary + ' · score ' + s.score, s.registry.text.replace('✕ ', '') + '.', 'danger');
-    log(c.site, c.id + ' · M2: ' + s.summary, 'danger');
+    var sc = deskScore(), sum = deskSummary();
+    c.evidence.m2 = { score: sc, text: sum };
+    addTimeline(c, 'M2', sum + ' · score ' + sc, 'Imprints from the live M2 model; ' + s.registry.text.replace('✕ ', '').toLowerCase() + ' (simulated OCR).', 'danger');
+    log(c.site, c.id + ' · M2: ' + sum, 'danger');
     $('#deskAttach').textContent = 'Attached to ' + c.id + ' ✓';
     $('#deskAttach').disabled = true;
+  }
+
+  // ----- imprint pad -----
+  var PAD = { base: null, drawing: false, truth: null };
+  function padReset() {
+    var cv = $('#pad'), ctx = cv.getContext('2d');
+    NL.drawTabletCrop(ctx, 240, 1, NL.rng(11));
+    PAD.base = ctx.getImageData(0, 0, 240, 240);
+    PAD.truth = null;
+    $('#padResult').innerHTML = '<p class="muted small">Waiting for your drawing&hellip;</p>';
+  }
+  function padClassify() {
+    var res = NL.m2.run($('#pad'), 0, 0, 240, 240);
+    if (!res) return;
+    var order = res.probs.map(function (p, i) { return i; }).sort(function (a, b) { return res.probs[b] - res.probs[a]; });
+    $('#padResult').innerHTML = order.map(function (i) {
+      var cls = NL.IMPRINT_CLASSES[i], p = Math.round(res.probs[i] * 100);
+      return '<div class="prob-row' + (i === res.top ? ' top' : '') + (cls.risk ? ' risk' : '') + '"><span>' + esc(cls.name) + '</span><b>' + p + '%</b><div class="track"><i style="width:' + p + '%"></i></div></div>';
+    }).join('') + '<p class="muted small">' + (PAD.truth != null ? 'True class of this random example: <b>' + esc(NL.IMPRINT_CLASSES[PAD.truth].name) + '</b> · ' : '') + res.ms.toFixed(1) + ' ms</p>';
+  }
+  function initPad() {
+    var cv = $('#pad'), ctx = cv.getContext('2d'), last = null;
+    padReset();
+    function pt(e) { var r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * 240, y: (e.clientY - r.top) / r.height * 240 }; }
+    cv.addEventListener('pointerdown', function (e) { PAD.drawing = true; PAD.truth = null; last = pt(e); cv.setPointerCapture(e.pointerId); e.preventDefault(); });
+    cv.addEventListener('pointermove', function (e) {
+      if (!PAD.drawing) return;
+      var p = pt(e);
+      ctx.strokeStyle = 'rgba(122,110,88,0.92)'; ctx.lineWidth = 7; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(last.x, last.y); ctx.lineTo(p.x, p.y); ctx.stroke();
+      last = p;
+    });
+    var up = function () { if (PAD.drawing) { PAD.drawing = false; padClassify(); } };
+    cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+    $('#padClear').addEventListener('click', padReset);
+    $('#padRandom').addEventListener('click', function () {
+      var cls = Math.floor(Math.random() * 4);
+      NL.drawTabletCrop(ctx, 240, cls, NL.rng(Math.floor(Math.random() * 1e9)));
+      PAD.truth = cls; padClassify();
+    });
+    $('#padUpload').addEventListener('change', function () {
+      var f = this.files && this.files[0];
+      if (!f) return;
+      var img = new Image();
+      img.onload = function () {
+        var s = Math.min(img.width, img.height);
+        ctx.drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, 240, 240);
+        PAD.truth = null; padClassify();
+      };
+      img.src = URL.createObjectURL(f);
+      this.value = '';
+    });
   }
 
   // ---------------- M3 hyperspectral ----------------
@@ -386,7 +622,8 @@
       '<ul class="rank">' + R.ranking.map(function (x) {
         var p = Math.max(0, Math.round(x.r * 100));
         return '<li><span>' + esc(x.ref.name) + ' <span class="muted">· ' + esc(x.ref.note) + '</span></span><b>' + p + '%</b><div class="track"><i style="width:' + p + '%;background:' + (x.ref.illicit ? 'var(--danger)' : 'var(--ok)') + '"></i></div></li>';
-      }).join('') + '</ul>';
+      }).join('') + '</ul>' +
+      (R.unmix ? '<p class="small"><b>Mixture (non-negative least-squares unmixing):</b> ' + R.unmix.parts.slice(0, 3).map(function (q) { return Math.round(q.f * 100) + '% ' + esc(q.ref.name); }).join(' + ') + ' <span class="muted">· fit error ' + R.unmix.rmse.toFixed(3) + '</span></p>' : '');
   }
   function hyperScan() {
     $('#hyperScan').disabled = true;
@@ -398,7 +635,7 @@
     var pct = Math.round(R.top.r * 100);
     c.evidence.m3 = R.illicit ? { score: pct, illicit: true, text: R.top.ref.name } : { score: 5, illicit: false, text: 'No controlled substance' };
     addTimeline(c, 'M3', R.illicit ? R.top.ref.name + ' · ' + pct + '% spectral match' : 'No controlled substance detected',
-      R.illicit ? 'Identified through sealed inner pouch; ' + R.coverage + '% of tub contents. Spectra saved to evidence pack.' : 'Contents match benign library entries.', R.illicit ? 'danger' : 'ok');
+      R.illicit ? 'Identified through the sealed pouch; ' + R.coverage + '% of contents. Mixture: ' + R.unmix.parts.slice(0, 2).map(function (q) { return Math.round(q.f * 100) + '% ' + q.ref.name; }).join(' + ') + '. Spectra saved to evidence pack.' : 'Contents match benign library entries.', R.illicit ? 'danger' : 'ok');
     log(c.site, c.id + ' · M3: ' + (R.illicit ? R.top.ref.name + ' ' + pct + '%' : 'clean'), R.illicit ? 'danger' : 'ok');
     $('#hyperAttach').textContent = 'Attached to ' + c.id + ' ✓';
     $('#hyperAttach').disabled = true;
@@ -571,7 +808,91 @@
     });
   }
 
-  var RENDER = { dashboard: renderDashboard, lane: renderLane, 'case': renderCase, desk: renderDesk, hyper: renderHyper, predict: renderPredict, learn: renderLearn };
+  // ---------------- AI models: model cards + live benchmarks ----------------
+  function pct(v) { return (v * 100).toFixed(1) + '%'; }
+  function renderModels() {
+    var M = NL.MODEL_METRICS || {}, m1 = M.m1 || {}, m2 = M.m2 || {};
+    $('#cardM1').innerHTML =
+      '<div class="card-h"><h3>M1 · X-ray concealment segmentation</h3><span class="badge live">Live model</span></div>' +
+      '<p class="muted">A fully-convolutional neural network that outputs a per-pixel probability of hidden drugs. Trained on ' + (m1.train_bags || 0).toLocaleString('en-US') + ' synthetic dual-energy bag scans with pixel-level ground truth; tested on ' + (m1.test_bags || 0) + ' bags it never saw.</p>' +
+      '<div class="mc-grid">' +
+      '<div class="mc"><small>Bag-level recall</small><b>' + pct(m1.bag_recall || 0) + '</b></div>' +
+      '<div class="mc"><small>False alarms (clean bags)</small><b>' + pct(m1.bag_false_alarm || 0) + '</b></div>' +
+      '<div class="mc"><small>Pixel IoU</small><b>' + pct(m1.pixel_iou || 0) + '</b></div>' +
+      '<div class="mc"><small>Parameters</small><b>' + (m1.params || 0).toLocaleString('en-US') + '</b></div></div>' +
+      '<div class="arch">input 3×128×224 (RGB dual-energy)\nconv3×3·16 → pool → conv3×3·32 → pool\ndilated conv·32 (d=2) → dilated conv·32 (d=4)\nconv1×1·16 → upsample ×2 ⊕ skip(conv1)\nconv3×3·16 → conv1×1·1 → sigmoid heatmap 64×112</div>' +
+      '<div class="row"><button class="btn primary" id="benchM1" type="button">Test on 40 brand-new random bags</button><span class="muted small" id="benchM1Out">Runs entirely in this browser.</span></div>' +
+      '<div class="bench-thumbs" id="benchM1Thumbs"></div>';
+    var cm = m2.confusion || [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], short = ['Crescent', 'Plain', 'Scored', 'Letter'];
+    $('#cardM2').innerHTML =
+      '<div class="card-h"><h3>M2 · Tablet imprint classifier</h3><span class="badge live">Live model</span></div>' +
+      '<p class="muted">A convolutional classifier for 48×48 tablet close-ups: Captagon-style twin-crescent vs. plain, scored and letter-stamped tablets. Trained on ' + (m2.train_crops || 0).toLocaleString('en-US') + ' synthetic close-ups with random lighting, rotation, blur and noise.</p>' +
+      '<div class="mc-grid">' +
+      '<div class="mc"><small>Test accuracy</small><b>' + pct(m2.accuracy || 0) + '</b></div>' +
+      '<div class="mc"><small>Crescent recall</small><b>' + pct(m2.crescent_recall || 0) + '</b></div>' +
+      '<div class="mc"><small>Crescent false positives</small><b>' + pct(m2.crescent_false_positive || 0) + '</b></div>' +
+      '<div class="mc"><small>Parameters</small><b>' + (m2.params || 0).toLocaleString('en-US') + '</b></div></div>' +
+      '<table class="cm"><tr><th>true ↓ / predicted →</th>' + short.map(function (s) { return '<th>' + s + '</th>'; }).join('') + '</tr>' +
+      cm.map(function (row, i) { return '<tr><th>' + short[i] + '</th>' + row.map(function (v, j) { return '<td class="' + (i === j ? 'diag' : '') + '">' + v + '</td>'; }).join('') + '</tr>'; }).join('') + '</table>' +
+      '<div class="row"><button class="btn primary" id="benchM2" type="button">Test on 200 brand-new tablets</button><span class="muted small" id="benchM2Out">Runs entirely in this browser.</span></div>';
+    $('#cardOthers').innerHTML =
+      '<div class="card-h"><h3>What is real in this prototype</h3><span class="muted small">Models trained ' + esc(M.trained || '') + ' · training code in narcolens-ml/</span></div>' +
+      '<table class="tbl" style="min-width:0"><thead><tr><th>Component</th><th>Status</th><th>How it works here</th></tr></thead><tbody>' +
+      [['M1 X-ray vision', 'live', 'Trained CNN, pure-JS inference on every scan, Bag Builder and uploads'],
+       ['M2 tablet imprints', 'live', 'Trained CNN on every tablet crop, the imprint pad and uploads'],
+       ['M2 packaging detection & OCR', 'sim', 'Pre-written results for the three sample photos'],
+       ['M3 spectral ID', 'algo', 'Pearson matching against an 11-substance library + non-negative least-squares unmixing'],
+       ['M3 hyperspectral camera', 'sim', 'Spectra are simulated (no sensor attached)'],
+       ['M4 novel-drug predictor', 'sim', 'Illustrative predictions'],
+       ['M5 fusion', 'algo', 'Noisy-OR over live evidence scores'],
+       ['Federated learning loop', 'sim', 'Animated illustration of the training round']
+      ].map(function (r) { return '<tr><td>' + r[0] + '</td><td><span class="badge ' + r[1] + '">' + ({ live: 'Live model', algo: 'Live algorithm', sim: 'Simulated' })[r[1]] + '</span></td><td class="muted">' + r[2] + '</td></tr>'; }).join('') +
+      '</tbody></table><p class="muted small">Production would retrain M1 and M2 on real customs scans and photos under a data-sharing MoU; the synthetic training here proves the pipeline and the in-browser/edge inference, not field accuracy.</p>';
+    $('#benchM1').addEventListener('click', benchM1);
+    $('#benchM2').addEventListener('click', benchM2);
+  }
+  function benchM1() {
+    var btn = $('#benchM1'), out = $('#benchM1Out'), th = $('#benchM1Thumbs');
+    btn.disabled = true; th.innerHTML = '';
+    var N = 40, k = 0, tp = 0, fp = 0, tn = 0, fn = 0, ms = 0, base = Math.floor(Math.random() * 1e8) + 5e6;
+    var off = document.createElement('canvas'); off.width = NL.XRAY.W; off.height = NL.XRAY.H;
+    function next() {
+      if (k >= N) {
+        out.innerHTML = '<b>Recall ' + (tp + fn ? Math.round(tp / (tp + fn) * 100) : 0) + '%</b> (' + tp + '/' + (tp + fn) + ' drug bags) · <b>False alarms ' + (fp + tn ? Math.round(fp / (fp + tn) * 100) : 0) + '%</b> (' + fp + '/' + (fp + tn) + ' clean bags) · ' + (ms / N).toFixed(0) + ' ms per bag';
+        btn.disabled = false; return;
+      }
+      var sc = NL.randomScene(base + k), truth = NL.sceneHasConcealment(sc);
+      NL.renderScene(sc, off.getContext('2d'), null);
+      var res = NL.m1.run(off), flag = res.score >= 50;
+      ms += res.ms;
+      var cls = truth ? (flag ? 'tp' : 'fn') : (flag ? 'fp' : 'tn');
+      if (cls === 'tp') tp++; else if (cls === 'fn') fn++; else if (cls === 'fp') fp++; else tn++;
+      var t = document.createElement('canvas'); t.width = 152; t.height = 88; t.className = cls;
+      var tc = t.getContext('2d'); tc.drawImage(off, 0, 0, 152, 88); tc.globalAlpha = 0.9; tc.drawImage(res.heatCanvas, 0, 0, 152, 88);
+      t.title = (truth ? 'Drugs hidden' : 'Clean') + ' · AI score ' + res.score;
+      th.appendChild(t);
+      k++; out.textContent = 'Scanning bag ' + k + ' / ' + N + '…';
+      setTimeout(next, 0);
+    }
+    next();
+  }
+  function benchM2() {
+    var btn = $('#benchM2'), out = $('#benchM2Out');
+    btn.disabled = true;
+    var N = 200, ok = 0, cres = 0, cresHit = 0, ms = 0, c = document.createElement('canvas'); c.width = 48; c.height = 48;
+    var base = Math.floor(Math.random() * 1e8) + 9e6;
+    for (var k = 0; k < N; k++) {
+      var r = NL.rng(base + k), cls = Math.floor(r() * 4);
+      NL.drawTabletCrop(c.getContext('2d'), 48, cls, r);
+      var res = NL.m2.run(c, 0, 0, 48, 48); ms += res.ms;
+      if (res.top === cls) ok++;
+      if (cls === 0) { cres++; if (res.top === 0) cresHit++; }
+    }
+    out.innerHTML = '<b>Accuracy ' + Math.round(ok / N * 100) + '%</b> on ' + N + ' new tablets · crescent recall ' + Math.round(cresHit / Math.max(1, cres) * 100) + '% · ' + (ms / N).toFixed(1) + ' ms each';
+    btn.disabled = false;
+  }
+
+  var RENDER = { dashboard: renderDashboard, lane: renderLane, 'case': renderCase, desk: renderDesk, hyper: renderHyper, predict: renderPredict, learn: renderLearn, models: renderModels };
 
   // ---------------- demo runner ----------------
   function narrate(n, total, text) {
@@ -596,9 +917,9 @@
     }
     Promise.resolve()
       .then(step(1, 'A bag on a high-risk transfer route reaches DXB Terminal 3. Before it lands, M5 has already given it a pre-arrival score of 52.', function () { go('lane'); }, 3200))
-      .then(step(2, 'M1 reads the existing X-ray scan on the edge box and finds a dense block hidden inside a protein tub.', function () { return new Promise(function (res) { selectBag(bagI, res); }); }, 3600))
+      .then(step(2, 'M1 – a trained neural network running live in this browser – reads the X-ray and highlights the dense block hidden inside a protein tub.', function () { setLaneMode('belt'); return new Promise(function (res) { selectBag(bagI, res); }); }, 3600))
       .then(step(3, 'Fused score crosses the threshold, so a case opens. The officer sees exactly why: every factor is explained, and no nationality data is used.', function () { go('case'); }, 5200))
-      .then(step(4, 'The officer opens the bag. M2 reads the label (Arabic + English), checks the registry and spots Captagon-style imprints.', function () {
+      .then(step(4, 'The officer opens the bag and photographs it. The live M2 model classifies every tablet imprint as Captagon-style; the label is not in the registry.', function () {
         caseAction('open'); S.deskSample = 'protein-tub'; S.deskAnalysed = false; renderDesk();
         return wait(800).then(analyseDesk).then(function () { return wait(1800); }).then(attachDesk);
       }, 2200))
@@ -670,7 +991,11 @@
     $('#laneResult').addEventListener('click', function (e) { var b = e.target.closest('[data-open-case]'); if (b) { S.currentCase = b.dataset.openCase; go('case'); } });
     $('#scanNext').addEventListener('click', scanNext);
     $('#laneAuto').addEventListener('click', toggleAuto);
-    $('#overlayToggle').addEventListener('change', function () { NL.redrawXray($('#xray'), this.checked); });
+    $('#overlayToggle').addEventListener('change', function () { if (S.laneMode === 'build') drawBuild(); else NL.redrawXray($('#xray')); });
+    $('#truthToggle').addEventListener('change', function () { if (S.laneMode === 'build') drawBuild(); else NL.redrawXray($('#xray')); });
+    $('#laneModes').addEventListener('click', function (e) { var b = e.target.closest('[data-mode]'); if (b) setLaneMode(b.dataset.mode); });
+    initBuilder();
+    initPad();
     $('#caseHead').addEventListener('change', function (e) { if (e.target.id === 'caseSelect') { S.currentCase = e.target.value; renderCase(); } });
     $('#caseActions').addEventListener('click', function (e) { var b = e.target.closest('[data-act]'); if (b) caseAction(b.dataset.act); });
     $('#samplePick').addEventListener('click', function (e) { var b = e.target.closest('[data-sample]'); if (b) { S.deskSample = b.dataset.sample; S.deskAnalysed = false; renderDesk(); } });

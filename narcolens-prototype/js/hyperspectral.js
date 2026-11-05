@@ -181,6 +181,7 @@
     var ranking = rank(mean).filter(function (x) { return !x.ref.material; }).slice(0, 5);
     var focusIdx = target[Math.floor(target.length / 2)] || 0;
     return {
+      unmix: H.unmix(mean),
       illicit: ill.length > 0,
       top: ranking[0],
       ranking: ranking,
@@ -189,6 +190,28 @@
       focus: { x: focusIdx % GW, y: Math.floor(focusIdx / GW) }
     };
   }
+
+  // Non-negative least-squares spectral unmixing (coordinate descent on the normal equations).
+  // Returns components with their share of the signal, e.g. 78% ATS + 22% whey protein.
+  var GRAM = null;
+  H.unmix = function (spec) {
+    var K = REFS.length, k, j, i;
+    if (!GRAM) {
+      GRAM = [];
+      for (k = 0; k < K; k++) { GRAM.push(new Float64Array(K)); for (j = 0; j < K; j++) { var t = 0; for (i = 0; i < NB; i++) t += REFS[k].s[i] * REFS[j].s[i]; GRAM[k][j] = t; } }
+    }
+    var c = new Float64Array(K), x = new Float64Array(K);
+    for (k = 0; k < K; k++) { var u = 0; for (i = 0; i < NB; i++) u += REFS[k].s[i] * spec[i]; c[k] = u; }
+    for (var it = 0; it < 400; it++) for (k = 0; k < K; k++) {
+      var g = -c[k]; for (j = 0; j < K; j++) g += GRAM[k][j] * x[j];
+      x[k] = Math.max(0, x[k] - g / GRAM[k][k]);
+    }
+    var tot = 0, out = [];
+    for (k = 0; k < K; k++) if (REFS[k].id !== 'bg') tot += x[k];
+    for (k = 0; k < K; k++) if (REFS[k].id !== 'bg' && x[k] / (tot || 1) > 0.03) out.push({ ref: REFS[k], f: x[k] / tot });
+    var res = 0; for (i = 0; i < NB; i++) { var m = 0; for (k = 0; k < K; k++) m += x[k] * REFS[k].s[i]; res += (m - spec[i]) * (m - spec[i]); }
+    return { parts: out.sort(function (a, b) { return b.f - a.f; }), rmse: Math.sqrt(res / NB) };
+  };
 
   H.pick = function (ev) {
     var cv = document.getElementById('hyperCanvas');
@@ -256,6 +279,7 @@
     ctx.strokeStyle = accent; ctx.lineWidth = 2.2; ctx.beginPath();
     for (var i = 0; i < NB; i++) { if (i) ctx.lineTo(X(i), Y(spec[i])); else ctx.moveTo(X(i), Y(spec[i])); }
     ctx.stroke();
-    if (info) info.textContent = 'pixel (' + H.selected.x + ', ' + H.selected.y + ') → ' + best.ref.name + ' · ' + Math.round(best.r * 100) + '%';
+    var um = H.unmix(spec).parts.slice(0, 2).map(function (p) { return Math.round(p.f * 100) + '% ' + p.ref.name; }).join(' + ');
+    if (info) info.textContent = 'pixel (' + H.selected.x + ', ' + H.selected.y + ') → ' + best.ref.name + ' · ' + Math.round(best.r * 100) + '% · mix: ' + um;
   };
 })(window.NL);
